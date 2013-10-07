@@ -1,5 +1,5 @@
 GEM
-  remote: https://rubygems.org/
+  remote: http://mirrors.6.tuna.tsinghua.edu.cn/rubygems/
   specs:
     RedCloth (4.2.9)
     chunky_png (1.2.5)
