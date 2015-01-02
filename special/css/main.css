@@ -7,15 +7,6 @@ dl, dd, ol, ul, figure {
   margin: 0;
   padding: 0; }
 
-img {
-	margin-top: 10px;
-	margin-bottom: 10px;
-}
-
-.weibo {
-	font-size: 9px;
-}
-
 /**
  * Basic styling
  */
@@ -151,6 +142,10 @@ pre {
   .icon > svg path {
     fill: #828282; }
 
+.page_content img {
+  margin-top: 10px;
+  margin-bottom: 10px; }
+
 /**
  * Site header
  */
@@ -158,9 +153,8 @@ pre {
   border-top: 5px solid #424242;
   border-bottom: 1px solid #e8e8e8;
   min-height: 56px;
-  position: relative; 
   background-color: #FFEFCD;
-}
+  position: relative; }
 
 .site-title {
   font-size: 26px;
@@ -458,4 +452,3 @@ pre {
     color: #008080; }
   .highlight .il {
     color: #099; }
-	
