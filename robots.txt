@@ -1,4 +1,0 @@
-User-agent: *
-Disallow: 
-
-Sitemap: http://edward-zhu.github.io/sitemap.xml 
