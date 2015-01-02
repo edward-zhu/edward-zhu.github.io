@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>又一个临时的博客</title>
+    <title>OS Experiment Special</title>
     <description>copyright 2015 Edward Zhu &lt;br&gt; 所有文章采用知识共享署名-非商业性使用 4.0 国际许可协议进行许可。
 </description>
-    <link>http://edward-zhu.github.io/</link>
-    <atom:link href="http://edward-zhu.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 02 Jan 2015 19:47:22 +0800</pubDate>
-    <lastBuildDate>Fri, 02 Jan 2015 19:47:22 +0800</lastBuildDate>
+    <link>http://edward-zhu.github.io/special//special//</link>
+    <atom:link href="http://edward-zhu.github.io/special//special//feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 02 Jan 2015 20:01:46 +0800</pubDate>
+    <lastBuildDate>Fri, 02 Jan 2015 20:01:46 +0800</lastBuildDate>
     <generator>Jekyll v2.5.3</generator>
     
       <item>
@@ -118,8 +118,8 @@ int main(int argc, char * argv[])
 
 </description>
         <pubDate>Sat, 03 Jan 2015 03:44:00 +0800</pubDate>
-        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-7.2.html</link>
-        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-7.2.html</guid>
+        <link>http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-7.2.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-7.2.html</guid>
         
         
         <category>os_exp</category>
@@ -486,8 +486,8 @@ lrwx------ 1 edward edward 64 12月 30 19:36 2 -&amp;gt; /dev/pts/9
 
 </description>
         <pubDate>Sat, 03 Jan 2015 03:18:00 +0800</pubDate>
-        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-6.2.html</link>
-        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-6.2.html</guid>
+        <link>http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-6.2.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-6.2.html</guid>
         
         
         <category>os_exp</category>
@@ -1114,8 +1114,8 @@ $ dmesg
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 03 Jan 2015 03:00:00 +0800</pubDate>
-        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-5.3.html</link>
-        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-5.3.html</guid>
+        <link>http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-5.3.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-5.3.html</guid>
         
         
         <category>os_exp</category>
@@ -1361,8 +1361,8 @@ avg. val: 3.2863
 
 </description>
         <pubDate>Sat, 03 Jan 2015 03:00:00 +0800</pubDate>
-        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-4.3.html</link>
-        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-4.3.html</guid>
+        <link>http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-4.3.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-4.3.html</guid>
         
         
         <category>os_exp</category>
@@ -1926,8 +1926,8 @@ Continuing.
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 03 Jan 2015 02:53:00 +0800</pubDate>
-        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-3.1.html</link>
-        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-3.1.html</guid>
+        <link>http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-3.1.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/special//special//os_exp/2015/01/03/exp-3.1.html</guid>
         
         
         <category>os_exp</category>
@@ -2054,8 +2054,8 @@ Continuing.
 &lt;p&gt;返回结果正确，新增的系统调用被成功添加进内核中。&lt;/p&gt;
 </description>
         <pubDate>Fri, 02 Jan 2015 21:53:00 +0800</pubDate>
-        <link>http://edward-zhu.github.io/os_exp/2015/01/02/exp-2.4.html</link>
-        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/02/exp-2.4.html</guid>
+        <link>http://edward-zhu.github.io/special//special//os_exp/2015/01/02/exp-2.4.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/special//special//os_exp/2015/01/02/exp-2.4.html</guid>
         
         
         <category>os_exp</category>
@@ -2241,8 +2241,8 @@ Continuing.
 
 </description>
         <pubDate>Fri, 02 Jan 2015 21:53:00 +0800</pubDate>
-        <link>http://edward-zhu.github.io/os_exp/2015/01/02/exp-2.3.html</link>
-        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/02/exp-2.3.html</guid>
+        <link>http://edward-zhu.github.io/special//special//os_exp/2015/01/02/exp-2.3.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/special//special//os_exp/2015/01/02/exp-2.3.html</guid>
         
         
         <category>os_exp</category>
@@ -2418,8 +2418,8 @@ Continuing.
 
 </description>
         <pubDate>Fri, 02 Jan 2015 21:30:16 +0800</pubDate>
-        <link>http://edward-zhu.github.io/os_exp/2015/01/02/exp-1.2.html</link>
-        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/02/exp-1.2.html</guid>
+        <link>http://edward-zhu.github.io/special//special//os_exp/2015/01/02/exp-1.2.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/special//special//os_exp/2015/01/02/exp-1.2.html</guid>
         
         
         <category>os_exp</category>
