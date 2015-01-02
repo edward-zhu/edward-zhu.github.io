@@ -1,0 +1,132 @@
+---
+layout: post
+title:  "系统安装实验"
+date:   2015-01-02 13:30:16
+categories: os_exp
+---
+##1. 实验内容
+在配备Mac操作系统Host机上，安装虚拟机软件Parallel Desktop，对硬盘进行分区和格式化，安装ArchLinux操作系统，以便在一台机器上模拟出多种操作系统运行环境。
+
+##2. 实验过程
+
+###实验环境
+
+####宿主机
+- Intel Core i5 @ 2.5GHz
+- OS X 10.10.1
+
+####虚拟机
+- Parallel Desktop 9
+
+####Linux系统
+- ArchLinux (安装介质 2014.12.20)
+
+###过程
+
+####下载安装介质
+	aria2c -c http://mirror.bjtu.edu.cn/archlinux/iso/2014.12.01/archlinux-2014.12.01-dual.iso
+	
+####加载镜像
+![](/images/1.2/0.png)
+
+####启动虚拟机
+![](/images/1.2/1.png)
+
+####磁盘分区
+共分3个区：
+
+类型			 | 大小			 | 挂载点
+------------ | ------------- | ------------
+ext4	 	| 4GB  			| /
+ext4 		| 5GB  			| /home
+swap		| 1GB			| -
+
+使用`cfdisk`程序进行分区
+
+	# cfdisk
+
+![](/images/1.2/2.png)
+
+格式化分区
+
+	# mkfs.ext4 /dev/sda1
+	# mkfs.ext4 /dev/sda2
+	# mkswap /dev/sda3
+
+![](/images/1.2/3.png)
+
+####挂载分区
+	# mount /dev/sda1 /mnt
+	# mkdir /mnt/home
+	# monut /dev/sda2 /mnt/home
+	# swapon /dev/sda3
+	
+![](/images/1.2/4.png)
+
+####下载系统基础环境包
+	# pacstrap /mnt base base-devel
+![](/images/1.2/5.png)
+
+####生成fstab表
+	# genfstab -p /mnt >> /mnt/etc/fstab
+	
+####切换根目录至新系统
+	# arch-chroot /mnt
+![](/images/1.2/6.png)
+
+####初始设置
+设置主机名
+	
+	# echo edward-arch > /etc/hostname
+
+设置时区
+
+	# ln -sf /usr/share/zoneinfo/Asia/Macau /etc/localtime
+	
+在`/etc/locale.gen`中反注释需要的locales，然后运行命令生成locales
+
+	# locale-gen
+	
+设置locale偏好
+	
+	# echo LANG=en_US.UTF-8
+	
+创建初始RAM disk
+	
+	# mkinitcpio -p linux
+	
+创建root密码
+
+	# passwd
+	
+####安装引导器
+
+下载并安装`grub`
+
+	# pacman -S grub
+	
+安装`grub`至硬盘
+	
+	# grub-install --recheck /dev/sda
+	
+创建配置文件
+
+	# grub-mkconfig -o /boot/grub/grub.cfg
+	
+####重启至新系统
+返回安装环境
+
+	# exit
+
+重新启动
+
+	# reboot
+	
+####安装完成~
+![](/images/1.2/7.png)
+![](/images/1.2/8.png)
+	
+
+
+
+	

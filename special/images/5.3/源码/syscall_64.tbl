@@ -1,0 +1,9 @@
+# my syscall
+
+320 common eventopen	sys_eventopen
+321 common eventclose	sys_eventclose
+322 common eventwait	sys_eventwait
+323 common eventsig		sys_eventsig
+324 common eventshow	sys_eventshow
+
+# my syscall end

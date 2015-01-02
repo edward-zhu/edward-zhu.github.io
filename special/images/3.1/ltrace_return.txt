@@ -1,0 +1,8 @@
+__libc_start_main(0x40064d, 1, 0x7fffa94bef78, 0x4006c0, 0x400750 <unfinished ...>
+fork()                                            = 3831
+printf("child pid : %u\n", 3831)                  = 17
+wait(NULL <unfinished ...>
+--- SIGCHLD (Child exited) ---
+<... wait resumed> )                              = 3831
+puts("child process returned.")                   = 24
++++ exited (status 0) +++

@@ -1,0 +1,12 @@
+# Site settings
+title: 又一个临时的博客
+email: edward.zhu93@gmail.com
+description: > 
+  copyright 2015 Edward Zhu <br>
+  所有文章采用知识共享署名-非商业性使用 4.0 国际许可协议进行许可。
+baseurl: "" # the subpath of your site, e.g. /blog/
+url: "http://edward-zhu.github.io" # the base hostname & protocol for your site
+github_username:  edward-zhu
+
+# Build settings
+markdown: kramdown

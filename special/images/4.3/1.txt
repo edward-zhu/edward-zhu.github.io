@@ -1,0 +1,11 @@
+page_fault per second: 2.8000
+page_fault per second: 3.4000
+page_fault per second: 3.3289
+page_fault per second: 3.0969
+page_fault per second: 3.1150
+page_fault per second: 2.9294
+page_fault per second: 3.8242
+page_fault per second: 3.5465
+page_fault per second: 3.5064
+page_fault per second: 3.3160
+avg. val: 3.2863

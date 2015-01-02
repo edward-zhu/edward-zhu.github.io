@@ -1,0 +1,127 @@
+GNU gdb (GDB) 7.6.1-ubuntu
+Copyright (C) 2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /home/edward/programs/gdb...done.
+(gdb) l 0
+1	#include <stdio.h>
+2	
+3	int func(int n)
+4	{
+5		if (n < 1) {
+6			return 0;
+7		}
+8		if (n == 1 || n == 2) {
+9			return 1;
+10		}
+(gdb) break 3
+Breakpoint 1 at 0x400539: file gdb.c, line 3.
+(gdb) n
+The program is not being run.
+(gdb) r
+Starting program: /home/edward/programs/./gdb 
+
+Breakpoint 1, func (n=5) at gdb.c:5
+5		if (n < 1) {    
+(gdb) disassemble func
+Dump of assembler code for function func:
+   0x000000000040052d <+0>:	push   %rbp
+   0x000000000040052e <+1>:	mov    %rsp,%rbp
+   0x0000000000400531 <+4>:	push   %rbx
+   0x0000000000400532 <+5>:	sub    $0x18,%rsp
+   0x0000000000400536 <+9>:	mov    %edi,-0x14(%rbp)
+=> 0x0000000000400539 <+12>:	cmpl   $0x0,-0x14(%rbp)
+   0x000000000040053d <+16>:	jg     0x400546 <func+25>
+   0x000000000040053f <+18>:	mov    $0x0,%eax
+   0x0000000000400544 <+23>:	jmp    0x400577 <func+74>
+   0x0000000000400546 <+25>:	cmpl   $0x1,-0x14(%rbp)
+   0x000000000040054a <+29>:	je     0x400552 <func+37>
+   0x000000000040054c <+31>:	cmpl   $0x2,-0x14(%rbp)
+   0x0000000000400550 <+35>:	jne    0x400559 <func+44>
+   0x0000000000400552 <+37>:	mov    $0x1,%eax
+   0x0000000000400557 <+42>:	jmp    0x400577 <func+74>
+   0x0000000000400559 <+44>:	mov    -0x14(%rbp),%eax
+   0x000000000040055c <+47>:	sub    $0x1,%eax
+   0x000000000040055f <+50>:	mov    %eax,%edi
+   0x0000000000400561 <+52>:	callq  0x40052d <func>
+   0x0000000000400566 <+57>:	mov    %eax,%ebx
+   0x0000000000400568 <+59>:	mov    -0x14(%rbp),%eax
+   0x000000000040056b <+62>:	sub    $0x2,%eax
+---Type <return> to continue, or q <return> to quit---q
+Quit
+(gdb) print n
+$1 = 5
+(gdb) n
+8		if (n == 1 || n == 2) {
+(gdb) n
+11		return func(n - 1) + func(n - 2);
+(gdb) n
+
+Breakpoint 1, func (n=4) at gdb.c:5
+5		if (n < 1) {
+(gdb) n
+8		if (n == 1 || n == 2) {
+(gdb) n
+11		return func(n - 1) + func(n - 2);
+(gdb) bt
+#0  func (n=4) at gdb.c:11
+#1  0x0000000000400566 in func (n=5) at gdb.c:11
+#2  0x000000000040058c in main () at gdb.c:16
+(gdb) n
+
+Breakpoint 1, func (n=3) at gdb.c:5
+5		if (n < 1) {
+(gdb) n
+8		if (n == 1 || n == 2) {
+(gdb) bt
+#0  func (n=3) at gdb.c:8
+#1  0x0000000000400566 in func (n=4) at gdb.c:11
+#2  0x0000000000400566 in func (n=5) at gdb.c:11
+#3  0x000000000040058c in main () at gdb.c:16
+(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) n
+Program not restarted.
+(gdb) info registers
+rax            0x3	3
+rbx            0x0	0
+rcx            0x40057e	4195710
+rdx            0x7fffffffdf48	140737488346952
+rsi            0x7fffffffdf38	140737488346936
+rdi            0x3	3
+rbp            0x7fffffffdde0	0x7fffffffdde0
+rsp            0x7fffffffddc0	0x7fffffffddc0
+r8             0x7ffff7dd4e80	140737351863936
+r9             0x7ffff7de9d40	140737351949632
+r10            0x7fffffffdcc0	140737488346304
+r11            0x7ffff7a33cf0	140737348058352
+r12            0x400440	4195392
+r13            0x7fffffffdf30	140737488346928
+r14            0x0	0
+r15            0x0	0
+rip            0x400546	0x400546 <func+25>
+eflags         0x206	[ PF IF ]
+cs             0x33	51
+ss             0x2b	43
+ds             0x0	0
+es             0x0	0
+fs             0x0	0
+---Type <return> to continue, or q <return> to quit---
+
+(gdb) c
+Continuing.
+
+Breakpoint 1, func (n=2) at gdb.c:5
+5		if (n < 1) {
+(gdb) clear
+已删除的断点 1 
+(gdb) c
+Continuing.
+5
+[Inferior 1 (process 4001) exited with code 02]
+(gdb) quit

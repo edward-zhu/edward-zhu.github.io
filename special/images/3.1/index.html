@@ -1,0 +1,876 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<style>
+body {
+  font-family: Helvetica, arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background-color: white;
+  padding: 0px; }
+
+body > *:first-child {
+  margin-top: 0 !important; }
+body > *:last-child {
+  margin-bottom: 0 !important; }
+
+a {
+  color: #4183C4; }
+a.absent {
+  color: #cc0000; }
+a.anchor {
+  display: block;
+  padding-left: 30px;
+  margin-left: -30px;
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0; }
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 20px 0 10px;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative; }
+
+h1:hover a.anchor, h2:hover a.anchor, h3:hover a.anchor, h4:hover a.anchor, h5:hover a.anchor, h6:hover a.anchor {
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA09pVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoMTMuMCAyMDEyMDMwNS5tLjQxNSAyMDEyLzAzLzA1OjIxOjAwOjAwKSAgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OUM2NjlDQjI4ODBGMTFFMTg1ODlEODNERDJBRjUwQTQiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OUM2NjlDQjM4ODBGMTFFMTg1ODlEODNERDJBRjUwQTQiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo5QzY2OUNCMDg4MEYxMUUxODU4OUQ4M0REMkFGNTBBNCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo5QzY2OUNCMTg4MEYxMUUxODU4OUQ4M0REMkFGNTBBNCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PsQhXeAAAABfSURBVHjaYvz//z8DJYCRUgMYQAbAMBQIAvEqkBQWXI6sHqwHiwG70TTBxGaiWwjCTGgOUgJiF1J8wMRAIUA34B4Q76HUBelAfJYSA0CuMIEaRP8wGIkGMA54bgQIMACAmkXJi0hKJQAAAABJRU5ErkJggg==) no-repeat 10px center;
+  text-decoration: none; }
+
+h1 tt, h1 code {
+  font-size: inherit; }
+
+h2 tt, h2 code {
+  font-size: inherit; }
+
+h3 tt, h3 code {
+  font-size: inherit; }
+
+h4 tt, h4 code {
+  font-size: inherit; }
+
+h5 tt, h5 code {
+  font-size: inherit; }
+
+h6 tt, h6 code {
+  font-size: inherit; }
+
+h1 {
+  font-size: 28px;
+  color: black; }
+
+h2 {
+  font-size: 24px;
+  border-bottom: 1px solid #cccccc;
+  color: black; }
+
+h3 {
+  font-size: 18px; }
+
+h4 {
+  font-size: 16px; }
+
+h5 {
+  font-size: 14px; }
+
+h6 {
+  color: #777777;
+  font-size: 14px; }
+
+p, blockquote, ul, ol, dl, li, table, pre {
+  margin: 15px 0; }
+
+hr {
+  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAYAAACtBE5DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OENDRjNBN0E2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OENDRjNBN0I2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo4Q0NGM0E3ODY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo4Q0NGM0E3OTY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PqqezsUAAAAfSURBVHjaYmRABcYwBiM2QSA4y4hNEKYDQxAEAAIMAHNGAzhkPOlYAAAAAElFTkSuQmCC) repeat-x 0 0;
+  border: 0 none;
+  color: #cccccc;
+  height: 4px;
+  padding: 0;
+}
+
+body > h2:first-child {
+  margin-top: 0;
+  padding-top: 0; }
+body > h1:first-child {
+  margin-top: 0;
+  padding-top: 0; }
+  body > h1:first-child + h2 {
+    margin-top: 0;
+    padding-top: 0; }
+body > h3:first-child, body > h4:first-child, body > h5:first-child, body > h6:first-child {
+  margin-top: 0;
+  padding-top: 0; }
+
+a:first-child h1, a:first-child h2, a:first-child h3, a:first-child h4, a:first-child h5, a:first-child h6 {
+  margin-top: 0;
+  padding-top: 0; }
+
+h1 p, h2 p, h3 p, h4 p, h5 p, h6 p {
+  margin-top: 0; }
+
+li p.first {
+  display: inline-block; }
+li {
+  margin: 0; }
+ul, ol {
+  padding-left: 30px; }
+
+ul :first-child, ol :first-child {
+  margin-top: 0; }
+
+dl {
+  padding: 0; }
+  dl dt {
+    font-size: 14px;
+    font-weight: bold;
+    font-style: italic;
+    padding: 0;
+    margin: 15px 0 5px; }
+    dl dt:first-child {
+      padding: 0; }
+    dl dt > :first-child {
+      margin-top: 0; }
+    dl dt > :last-child {
+      margin-bottom: 0; }
+  dl dd {
+    margin: 0 0 15px;
+    padding: 0 15px; }
+    dl dd > :first-child {
+      margin-top: 0; }
+    dl dd > :last-child {
+      margin-bottom: 0; }
+
+blockquote {
+  border-left: 4px solid #dddddd;
+  padding: 0 15px;
+  color: #777777; }
+  blockquote > :first-child {
+    margin-top: 0; }
+  blockquote > :last-child {
+    margin-bottom: 0; }
+
+table {
+  padding: 0;border-collapse: collapse; }
+  table tr {
+    border-top: 1px solid #cccccc;
+    background-color: white;
+    margin: 0;
+    padding: 0; }
+    table tr:nth-child(2n) {
+      background-color: #f8f8f8; }
+    table tr th {
+      font-weight: bold;
+      border: 1px solid #cccccc;
+      margin: 0;
+      padding: 6px 13px; }
+    table tr td {
+      border: 1px solid #cccccc;
+      margin: 0;
+      padding: 6px 13px; }
+    table tr th :first-child, table tr td :first-child {
+      margin-top: 0; }
+    table tr th :last-child, table tr td :last-child {
+      margin-bottom: 0; }
+
+img {
+  max-width: 100%; }
+
+span.frame {
+  display: block;
+  overflow: hidden; }
+  span.frame > span {
+    border: 1px solid #dddddd;
+    display: block;
+    float: left;
+    overflow: hidden;
+    margin: 13px 0 0;
+    padding: 7px;
+    width: auto; }
+  span.frame span img {
+    display: block;
+    float: left; }
+  span.frame span span {
+    clear: both;
+    color: #333333;
+    display: block;
+    padding: 5px 0 0; }
+span.align-center {
+  display: block;
+  overflow: hidden;
+  clear: both; }
+  span.align-center > span {
+    display: block;
+    overflow: hidden;
+    margin: 13px auto 0;
+    text-align: center; }
+  span.align-center span img {
+    margin: 0 auto;
+    text-align: center; }
+span.align-right {
+  display: block;
+  overflow: hidden;
+  clear: both; }
+  span.align-right > span {
+    display: block;
+    overflow: hidden;
+    margin: 13px 0 0;
+    text-align: right; }
+  span.align-right span img {
+    margin: 0;
+    text-align: right; }
+span.float-left {
+  display: block;
+  margin-right: 13px;
+  overflow: hidden;
+  float: left; }
+  span.float-left span {
+    margin: 13px 0 0; }
+span.float-right {
+  display: block;
+  margin-left: 13px;
+  overflow: hidden;
+  float: right; }
+  span.float-right > span {
+    display: block;
+    overflow: hidden;
+    margin: 13px auto 0;
+    text-align: right; }
+
+code, tt {
+  font-size: 12px;
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px; }
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent; }
+
+.highlight pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  font-size: 13px;
+  line-height: 19px;
+  overflow: auto;
+  padding: 6px 10px;
+  border-radius: 3px; }
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  font-size: 13px;
+  line-height: 19px;
+  overflow: auto;
+  padding: 6px 10px;
+  border-radius: 3px; }
+  pre code, pre tt {
+    background-color: transparent;
+    border: none; }
+
+sup {
+    font-size: 0.83em;
+    vertical-align: super;
+    line-height: 0;
+}
+* {
+	-webkit-print-color-adjust: exact;
+}
+@media screen and (min-width: 914px) {
+    body {
+        width: 854px;
+        margin:0 auto;
+    }
+}
+@media print {
+	table, pre {
+		page-break-inside: avoid;
+	}
+	pre {
+		word-wrap: break-word;
+	}
+}
+</style>
+<title><center>《操作系统》实验</center></title>
+
+</head>
+<body>
+<h1><center>《操作系统》实验</center></h1>
+
+<h2><center>3.1 进程行为观察</center></h2>
+
+<h3><center>祝嘉栋 2012211196 @304班</center></h3>
+
+<h2>1. 实验目的</h2>
+
+<p>通过本实验了解并掌握Linux主要的进程管理命令</p>
+
+<h2>2. 实验内容</h2>
+
+<ol>
+<li>在Linux下，分别用<code>snice</code>、<code>skill</code>、<code>top</code>等命令和<code>/proc</code>中有关目录、文件观察系统中进程运行情况和CPU工作情况。</li>
+<li>在Linux下，用<code>ptrace()</code>、<code>gdb</code>跟踪一个进程运行情况，用<code>strace</code>工具跟踪<code>fork()</code>过程，用ltrace工具跟踪execl()过程。观察并分析跟踪信息。</li>
+</ol>
+
+
+<h2>3. 实验过程和结果</h2>
+
+<h3>snice \ skill \ top 命令</h3>
+
+<h4>简介</h4>
+
+<h5><code>snice</code>命令</h5>
+
+<pre><code>snice [new priority] [options] process selection criteria
+</code></pre>
+
+<p>用于调整某个进程的nice值（静态优先级），nice值的范围是-20~+19，值越大优先级越小。默认用户进程的nice值为20，使用<code>snice</code>命令若不加参数默认为较初始值+4。</p>
+
+<h5><code>skill</code>命令</h5>
+
+<pre><code>skill [signal to send] [options] process selection criteria
+</code></pre>
+
+<p>用于向某个进程发送信号，默认发送TERM信号即终止信号。</p>
+
+<h5><code>top</code>命令</h5>
+
+<pre><code>top -hv | -abcHimMsS -d delay -n iterations -p pid [, pid ...]
+</code></pre>
+
+<p>显示系统的实时状态，包括系统的当前的基本状况、正在运行的任务，以及各个任务的信息，同时还提供了简单的交互方式来获取更详细的信息。</p>
+
+<h4>实验</h4>
+
+<p>首先，编写了一个简单的程序</p>
+
+<pre><code>// snice-test.c
+
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;time.h&gt;
+
+void printTime() {
+    time_t timep;
+    struct tm *p_tm;
+    timep = time(NULL);
+    p_tm = localtime(&amp;timep);
+    printf("%d:%d:%d\n", p_tm-&gt;tm_hour, p_tm-&gt;tm_min, p_tm-&gt;tm_sec);
+}
+
+int main(int argc, char *argv[])
+{
+    int i;
+    while (1) {
+        printf("%s ", argv[1]); // 显示当前进程名
+        printTime(); // 显示系统当前时间
+        for (i = 0; i &lt; 50000000; i++);  // 忙等待一段时间
+    }
+
+    return 0;
+}
+</code></pre>
+
+<p>同时运行两个该程序的实例</p>
+
+<pre><code>$ ./snice-test A
+$ ./snice-test B
+</code></pre>
+
+<p><img src="1.png" alt="" /></p>
+
+<p>可以看到两个进程中显示的信息交替出现，可以推测出两个进程得到CPU时间大致相同。执行<code>top</code>命令，查看两个进程当前的优先级和CPU占用情况，</p>
+
+<pre><code>$ top
+</code></pre>
+
+<p><img src="2.png" alt="" /></p>
+
+<p>观察到两个进程目前的优先级均为20，CPU占用率大致相等。下面使用<code>snice</code>命令降低A进程的优先级。</p>
+
+<pre><code>$ snice +10 5344
+</code></pre>
+
+<p><img src="3.png" alt="" /></p>
+
+<p>观察到两个进程信息出现频率有了明显的差距，B进程显示信息的出现频率基本达到了A进程的10倍左右。再次执行<code>top</code>命令。</p>
+
+<pre><code>$ top
+</code></pre>
+
+<p><img src="4.png" alt="" /></p>
+
+<p>此时观察到A进程的优先级发生了变化，至30，其CPU占用率仅为9.3%。而B进程则达到了86.9%。说明优先级的变化确实影响了CPU对进程的调度。</p>
+
+<p>执行<code>skill</code>命令结束一个进程</p>
+
+<pre><code>$ skill 5344
+</code></pre>
+
+<p><img src="5.png" alt="" /></p>
+
+<p>再次使用<code>top</code>命令发现A进程已经不再列表中，说明已经终止运行。</p>
+
+<h3><code>/proc</code> 目录</h3>
+
+<p>当一个用户进程运行时，在<code>/proc</code>目录下会建立以进程号命名的目录，以及在该目录下的一系列与该进程有关存有相应信息的文件和文件夹。</p>
+
+<p><img src="6.png" alt="" /></p>
+
+<p><code>fd</code> 目录中显示的是进程打开的文件链接。</p>
+
+<p><img src="7.png" alt="" /></p>
+
+<p><code>status</code> 文件中现实的是进程的基本信息。</p>
+
+<p><img src="8.png" alt="" /></p>
+
+<p><code>cwd</code> 是进程对应程序所在文件夹的软连接</p>
+
+<p><img src="9.png" alt="" /></p>
+
+<p>其他文件和文件夹的内容参考 <code>man 5 proc</code></p>
+
+<h3><code>ptrace()</code>函数</h3>
+
+<h4>简介</h4>
+
+<p>系统调用<code>ptrace()</code>可用于观察和控制其他进程的执行情况、查看和修改被跟踪进程运行时的寄存器和内存。主要用于实现断点Debug和系统调用跟踪。</p>
+
+<pre><code>long ptrace(enum __ptrace_request request, pid_t pid, void *addr, void *data);
+</code></pre>
+
+<p>第一个参数为PTRACE请求类型的编号，第二个参数为被跟踪进程的PID，第三个和第四个分别传入地址和数据，根据请求类型的不同有不同的使用方法。</p>
+
+<h4>实验</h4>
+
+<blockquote><p>Linux系统调用的参数通过寄存器来传递，对于x86-64架构，系统调用号存入<code>rax</code>寄存器中，参数依次存入<code>rdi</code>，<code>rsi</code>，<code>rdx</code>，<code>rcx</code>，<code>r8</code>，<code>r9</code>寄存器中。</p>
+
+<p>Linux 的系统调用编号存储在 <code>sys/syscall.h</code> 头文件中。</p>
+
+<p>write 系统调用共有三个参数，第一个为文件描述符，第二个为写入字符串的头指针，第三个为写入字符串的长度。</p></blockquote>
+
+<p>编写了下面一段程序</p>
+
+<pre><code>// ptrace-test.c
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/ptrace.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/syscall.h&gt;
+#include &lt;sys/user.h&gt;
+
+#define WORD_SIZE (sizeof(long))
+
+union word {
+    unsigned long long int val;
+    char chars[WORD_SIZE];
+}; 
+typedef union word WORD; // WORD 类型用于获取从被跟踪进程中取出的1个字大小的内存数据
+
+void getData(unsigned long begin, unsigned long length, char * str)
+{
+    unsigned long i, length, j;
+
+    char * pos = str;
+    /* 一次拷贝一个字的数据 */
+    for (i = 0; i &lt; length / WORD_SIZE; i++) {
+            w.val = ptrace(PTRACE_PEEKDATA, child, begin + i * WORD_SIZE, NULL);
+            memcpy(pos, w.chars, WORD_SIZE);
+            pos += WORD_SIZE;
+        }
+        /* 拷贝数据结尾不足一个字的数据 */
+        j = length % WORD_SIZE;
+        if (j) {
+            w.val = ptrace(PTRACE_PEEKDATA, child, begin + i * WORD_SIZE, NULL);
+            memcpy(pos, w.chars, j);
+        }
+        str[length] = '\0';
+    }
+}
+
+int main()
+{
+    pid_t child; // 子进程编号
+    struct user_regs_struct regs; 
+    child = fork(); // 创建子进程
+    int status;
+    int insyscall = 0;
+    unsigned long i, length, j;
+    unsigned long begin;
+    char * str = NULL, * pos = NULL;
+    WORD w;
+
+    if (child == 0) {
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL); // 接受跟踪请求
+        execl("/bin/ls", "ls", NULL); // 执行 ls 命令
+    }
+    else {
+        while(1) {
+            // 等待子进程进行系统调用或结束
+            wait(&amp;status); 
+
+            // 如果进程处于结束状态则跳出循环
+            if(WIFEXITED(status)) { 
+                break;
+            }
+            // 查询此时的寄存器的值
+            ptrace(PTRACE_GETREGS, child, NULL, &amp;regs); 
+            if (insyscall == 0) { // 如果当前是进入系统调用
+                insyscall = 1;
+                // 打印寄存器的值
+                printf("syscall: no.%llu params %llu, %llu, %llu\n", 
+                    regs.orig_rax, regs.rdi, regs.rsi, regs.rdx); 
+                // 如果是 write 系统调用
+                if (regs.orig_rax == SYS_write) {
+                    printf("------&gt;write syscall\n");
+                    length = regs.rdx;
+                    begin = regs.rsi;
+                    str = (char *)malloc(sizeof(char) * (length + 1));
+                    /* 拷贝出被跟踪进程输出字符串的内存数据 */
+                    getData(begin, length, str);
+                    /* 将字符串打印出来 */
+                    printf("\n------&gt;write : \n%s \n\n", str);
+                }
+            }
+            else {
+                // 输出系统调用的返回值
+                printf("syscall: returns %lld\n", regs.rax); 
+                insyscall = 0;
+            }
+
+            ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+        }
+
+    }
+
+    return 0;
+}
+</code></pre>
+
+<p>该程序创建了一个子进程，子进程执行<code>ls</code>命令，父进程使用<code>ptrace()</code>跟踪字进程执行。子进程每次进行系统调用，内核将控制权交给父进程，父进程调用ptrace()查看子进程当前寄存器的值，以获取当前系统调用的编号、参数和返回值，若是系统调用<code>write</code>，则使用<code>PTRACE_PEEKDATA</code>请求将子进程所在内存空间中要写入的字符串的内存数据拷贝至父进程的内存空间中，并输出字符串。</p>
+
+<h4>实验结果</h4>
+
+<p><img src="10.png" alt="" /></p>
+
+<p>通过输出结果可以看出，打印出了子进程每次进行系统调用的系统调用号，参数列表和返回值，<code>PTRACE_GETREGS</code>请求被成功处理。看到父进程打印的结果与子进程一致，子进程的内存数据被成功拷贝到父进程中。</p>
+
+<h3><code>strace</code>和<code>ltrace</code>命令</h3>
+
+<h4>简介</h4>
+
+<h5><code>strace</code>命令</h5>
+
+<p><code>strace</code>命令用于中断和记录进程所进行的系统调用过程，包括系统调用类型、参数及返回值。</p>
+
+<h5><code>ltrace</code>命令</h5>
+
+<p><code>ltrace</code>命令用于中断和记录进程的动态库调用过程，也可以中断和显示由该程序发起的系统调用（默认不显示）。</p>
+
+<h4>实验及结果</h4>
+
+<p>编写了如下程序</p>
+
+<pre><code>// trace.c
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/ptrace.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/syscall.h&gt;
+#include &lt;sys/user.h&gt;
+
+#define WORD_SIZE (sizeof(long))
+
+union word {
+    unsigned long long int val;
+    char chars[WORD_SIZE];
+};
+
+typedef union word WORD;
+
+int main()
+{
+    pid_t child;
+    struct user_regs_struct regs;
+    child = fork();
+
+    if (child == 0) {
+        execl("/bin/ls", "ls", NULL);
+    }
+    else {
+        printf("child pid : %u\n", child);
+        wait(NULL);
+        printf("child process returned.\n");
+
+    }
+
+    return 0;
+}
+</code></pre>
+
+<p>该程序创建了一个子进程，子进程执行<code>ls</code>命令，父进程打印子进程的PID，待子进程结束输出提示信息。</p>
+
+<p>执行结果</p>
+
+<pre><code>$ ./trace
+child pid : 3823
+gdb        gram4.txt          ptrace    snice.c            syntax
+gdb.c      gramm2.txt         ptrace.c  snice-test         syntax.cpp
+gdb.txt    grammar.txt        sizeof    strace_return.txt  trace
+gram3.txt  ltrace_return.txt  sizeof.c  strace.txt         trace.c
+
+child process returned.
+</code></pre>
+
+<p>使用<code>strace</code>命令跟踪程序</p>
+
+<pre><code>$ strace ./trace
+</code></pre>
+
+<p>输出结果</p>
+
+<pre><code>    execve("./trace", ["./trace"], [/* 68 vars */]) = 0
+    brk(0)                                  = 0x11ce000
+    access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+    mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fdb76961000
+    access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+    open("/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+    fstat(3, {st_mode=S_IFREG|0644, st_size=118840, ...}) = 0
+    mmap(NULL, 118840, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fdb76943000
+    close(3)                                = 0
+    access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+    open("/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+    read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0&gt;\0\1\0\0\0\360\36\2\0\0\0\0\0"..., 832) = 832
+    fstat(3, {st_mode=S_IFREG|0755, st_size=1853400, ...}) = 0
+    mmap(NULL, 3961912, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fdb76379000
+    mprotect(0x7fdb76536000, 2097152, PROT_NONE) = 0
+    mmap(0x7fdb76736000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1bd000) = 0x7fdb76736000
+    mmap(0x7fdb7673c000, 17464, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fdb7673c000
+    close(3)                                = 0
+    mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fdb76942000
+    mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fdb76940000
+    arch_prctl(ARCH_SET_FS, 0x7fdb76940740) = 0
+    mprotect(0x7fdb76736000, 16384, PROT_READ) = 0
+    mprotect(0x600000, 4096, PROT_READ)     = 0
+    mprotect(0x7fdb76963000, 4096, PROT_READ) = 0
+    munmap(0x7fdb76943000, 118840)          = 0
+--&gt; clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7fdb76940a10) = 3823
+    fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 0), ...}) = 0
+    mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fdb76960000
+    write(1, "child pid : 3823\n", 17)      = 17
+    wait4(-1, NULL, 0, NULL)                = 3823
+    --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=3823, si_status=0, si_utime=0, si_stime=0} ---
+    write(1, "child process returned.\n", 24) = 24
+    exit_group(0)                           = ?
+    +++ exited with 0 +++
+</code></pre>
+
+<p>此时无法找到<code>fork</code>系统调用，在<code>man 2 fork</code>中找到如下解释</p>
+
+<blockquote><p>Since version 2.3.3, rather than invoking the kernel's fork() system call, the glibc fork() wrapper that is provided as part of the NPTL threading implementation invokes clone(2) with flags that provide the same effect as the traditional system call.  (A call to fork() is equivalent to a call to clone(2) specifying flags as just SIGCHLD.) The glibc wrapper invokes any fork handlers that have been established using pthread_atfork(3).</p></blockquote>
+
+<p>说明其实调用glibc中的<code>fork()</code>函数其实就是在调用flags参数为<code>SIGCHLD</code>的<code>clone()</code>函数，即调用系统调用<code>clone</code>。可以看到输出结果中标记的一行为<code>clone</code>系统调用的记录，返回值为子进程PID。</p>
+
+<p>使用<code>ltrace</code>命令跟踪程序中的<code>execl()</code>函数</p>
+
+<pre><code>$ ltrace -f -e execl ./trace
+</code></pre>
+
+<p>输出结果</p>
+
+<pre><code>child pid : 5214
+[pid 5214] execl(0x400767, 0x400764, 0, -1, 0 &lt;unfinished ...&gt;
+[pid 5214] --- Called exec() ---
+gdb    gram4.txt          ptrace    snice.c        syntax
+gdb.c      gramm2.txt         ptrace.c  snice-test     syntax.cpp
+gdb.txt    grammar.txt        sizeof    strace_return.txt  trace
+gram3.txt  ltrace_return.txt  sizeof.c  strace.txt     trace.c
+[pid 5214] +++ exited (status 0) +++
+[pid 5213] --- SIGCHLD (Child exited) ---
+child process returned.
+[pid 5213] +++ exited (status 0) +++
+</code></pre>
+
+<p>看到ltrace跟踪到了程序中的动态库中<code>execl()</code>函数调用。</p>
+
+<h4><code>gdb</code>的使用</h4>
+
+<p>编写了如下简单的计算斐波那契数的程序，使用<code>gdb</code>命令来跟踪和调试程序。</p>
+
+<pre><code>#include &lt;stdio.h&gt;
+
+int func(int n)
+{
+    if (n &lt; 1) {
+        return 0;
+    }
+    if (n == 1 || n == 2) {
+        return 1;
+    }
+    return func(n - 1) + func(n - 2);
+}
+
+int main()
+{
+    printf("%d\n", func(5));
+
+    return 0;
+}
+</code></pre>
+
+<p>开始跟踪</p>
+
+<pre><code>$ gdb ./gdb
+
+GNU gdb (GDB) 7.6.1-ubuntu
+Copyright (C) 2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+For bug reporting instructions, please see:
+&lt;http://www.gnu.org/software/gdb/bugs/&gt;...
+Reading symbols from /home/edward/programs/gdb...done.
+(gdb) l 0 // 列出前10行代码
+1   #include &lt;stdio.h&gt;
+2   
+3   int func(int n)
+4   {
+5       if (n &lt; 1) {
+6           return 0;
+7       }
+8       if (n == 1 || n == 2) {
+9           return 1;
+10      }
+(gdb) break 3 // 在第3行设置断点
+Breakpoint 1 at 0x400539: file gdb.c, line 3.
+(gdb) r // 开始运行程序
+Starting program: /home/edward/programs/./gdb 
+
+Breakpoint 1, func (n=5) at gdb.c:5 // 在断点处中断
+5       if (n &lt; 1) {    
+(gdb) disassemble func // 输出反汇编程序
+Dump of assembler code for function func:
+   0x000000000040052d &lt;+0&gt;: push   %rbp
+   0x000000000040052e &lt;+1&gt;: mov    %rsp,%rbp
+   0x0000000000400531 &lt;+4&gt;: push   %rbx
+   0x0000000000400532 &lt;+5&gt;: sub    $0x18,%rsp
+   0x0000000000400536 &lt;+9&gt;: mov    %edi,-0x14(%rbp)
+=&gt; 0x0000000000400539 &lt;+12&gt;:    cmpl   $0x0,-0x14(%rbp)
+   0x000000000040053d &lt;+16&gt;:    jg     0x400546 &lt;func+25&gt;
+   0x000000000040053f &lt;+18&gt;:    mov    $0x0,%eax
+   0x0000000000400544 &lt;+23&gt;:    jmp    0x400577 &lt;func+74&gt;
+   0x0000000000400546 &lt;+25&gt;:    cmpl   $0x1,-0x14(%rbp)
+   0x000000000040054a &lt;+29&gt;:    je     0x400552 &lt;func+37&gt;
+   0x000000000040054c &lt;+31&gt;:    cmpl   $0x2,-0x14(%rbp)
+   0x0000000000400550 &lt;+35&gt;:    jne    0x400559 &lt;func+44&gt;
+   0x0000000000400552 &lt;+37&gt;:    mov    $0x1,%eax
+   0x0000000000400557 &lt;+42&gt;:    jmp    0x400577 &lt;func+74&gt;
+   0x0000000000400559 &lt;+44&gt;:    mov    -0x14(%rbp),%eax
+   0x000000000040055c &lt;+47&gt;:    sub    $0x1,%eax
+   0x000000000040055f &lt;+50&gt;:    mov    %eax,%edi
+   0x0000000000400561 &lt;+52&gt;:    callq  0x40052d &lt;func&gt;
+   0x0000000000400566 &lt;+57&gt;:    mov    %eax,%ebx
+   0x0000000000400568 &lt;+59&gt;:    mov    -0x14(%rbp),%eax
+   0x000000000040056b &lt;+62&gt;:    sub    $0x2,%eax
+---Type &lt;return&gt; to continue, or q &lt;return&gt; to quit---q
+Quit
+(gdb) print n // 打印局部变量n的值
+$1 = 5
+(gdb) n // 单步运行
+8       if (n == 1 || n == 2) {
+(gdb) n
+11      return func(n - 1) + func(n - 2);
+(gdb) n
+
+Breakpoint 1, func (n=4) at gdb.c:5
+5       if (n &lt; 1) {
+(gdb) n
+8       if (n == 1 || n == 2) {
+(gdb) n
+11      return func(n - 1) + func(n - 2);
+(gdb) bt // 打印调用栈
+#0  func (n=4) at gdb.c:11
+#1  0x0000000000400566 in func (n=5) at gdb.c:11
+#2  0x000000000040058c in main () at gdb.c:16
+(gdb) n
+
+Breakpoint 1, func (n=3) at gdb.c:5
+5       if (n &lt; 1) {
+(gdb) n
+8       if (n == 1 || n == 2) {
+(gdb) bt
+#0  func (n=3) at gdb.c:8
+#1  0x0000000000400566 in func (n=4) at gdb.c:11
+#2  0x0000000000400566 in func (n=5) at gdb.c:11
+#3  0x000000000040058c in main () at gdb.c:16
+(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) n
+Program not restarted.
+(gdb) info registers // 打印寄存器的值
+rax            0x3  3
+rbx            0x0  0
+rcx            0x40057e 4195710
+rdx            0x7fffffffdf48   140737488346952
+rsi            0x7fffffffdf38   140737488346936
+rdi            0x3  3
+rbp            0x7fffffffdde0   0x7fffffffdde0
+rsp            0x7fffffffddc0   0x7fffffffddc0
+r8             0x7ffff7dd4e80   140737351863936
+r9             0x7ffff7de9d40   140737351949632
+r10            0x7fffffffdcc0   140737488346304
+r11            0x7ffff7a33cf0   140737348058352
+r12            0x400440 4195392
+r13            0x7fffffffdf30   140737488346928
+r14            0x0  0
+r15            0x0  0
+rip            0x400546 0x400546 &lt;func+25&gt;
+eflags         0x206    [ PF IF ]
+cs             0x33 51
+ss             0x2b 43
+ds             0x0  0
+es             0x0  0
+fs             0x0  0
+---Type &lt;return&gt; to continue, or q &lt;return&gt; to quit---
+
+(gdb) clear // 清除所有断点
+已删除的断点 1 
+(gdb) c // 运行至程序结束
+Continuing.
+5
+[Inferior 1 (process 4001) exited with code 02]
+(gdb) quit
+</code></pre>
+
+<h2>参考文献</h2>
+
+<ul>
+<li>Wikipedia</li>
+<li>Linux Manual</li>
+</ul>
+
+</body>
+</html>
