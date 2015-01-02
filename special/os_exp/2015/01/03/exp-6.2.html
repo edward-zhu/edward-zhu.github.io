@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>I/O设备管理实验 - 代码分析</title>
+  <meta name="description" content="1. 实验内容阅读 Linux/Minux 中以下模块的调用主线">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://edward-zhu.github.io/os_exp/2015/01/03/exp-6.2.html">
+  <link rel="alternate" type="application/rss+xml" title="又一个临时的博客" href="http://edward-zhu.github.io/feed.xml" />
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">又一个临时的博客</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">I/O设备管理实验 - 代码分析</h1>
+    <p class="post-meta">Jan 3, 2015</p>
+  </header>
+
+  <article class="post-content">
+    <h2 id="section">1. 实验内容</h2>
+<p>阅读 Linux/Minux 中以下模块的调用主线</p>
+
+<ol>
+  <li><code>print()</code>函数内部实现模块调用主线</li>
+  <li><code>scanf()</code>函数内部实现模块调用主线</li>
+</ol>
+
+<p>写出分析报告</p>
+
+<h2 id="section-1">2. 分析报告</h2>
+
+<p><strong>以下报告采用<code>glibc 2.17</code>进行分析</strong></p>
+
+<h3 id="printf-"><code>printf()</code> 函数</h3>
+
+<h4 id="section-2">用户空间</h4>
+
+<p>首先，在<code>/libio/stdio.h</code>中找到<code>printf()</code>的函数声明</p>
+
+<pre><code>0358 /* Write formatted output to stdout.
+0359 
+0360    This function is a possible cancellation point and therefore not
+0361    marked with __THROW.  */
+0362 extern int printf (const char *__restrict __format, ...);
+</code></pre>
+
+<p>但是实际上没有名为<code>printf()</code>的函数定义，在<code>/stdio-common/printf.c</code>中找到强别名替换</p>
+
+<pre><code>0040 ldbl_strong_alias (__printf, printf);
+</code></pre>
+
+<p><code>print</code>被替换成了<code>__printf</code>，在相同文件内找到<code>__printf()</code>的定义</p>
+
+<pre><code>0024 /* Write formatted output to stdout from the format string FORMAT.  */
+0025 /* VARARGS1 */
+0026 int
+0027 __printf (const char *format, ...)
+0028 {
+0029   va_list arg;
+0030   int done;
+0031 
+0032   va_start (arg, format);
+0033   done = vfprintf (stdout, format, arg);
+0034   va_end (arg);
+0035 
+0036   return done;
+0037 }	
+</code></pre>
+
+<p>观察到调用了<code>vfprintf()</code>函数</p>
+
+<p>在<code>/stdio-common/vfprintf.c</code>中找到<code>vfprintf()</code>的定义，在定义使用<code>outstring()</code>来输出字符串。</p>
+
+<pre><code>0220 int
+0221 vfprintf (FILE *s, const CHAR_T *format, va_list ap)
+0222 {
+...
+0756       outstring (string, workend - string);                   \
+...
+2057 }
+</code></pre>
+
+<p>在同文件中找到<code>outstring()</code>宏的定义</p>
+
+<pre><code>0160 #define outstring(String, Len)
+...
+0164       if ((size_t) PUT (s, (String), (Len)) != (size_t) (Len))            \
+...
+</code></pre>
+
+<p>发现调用了<code>PUT()</code>，其定义在117行</p>
+
+<pre><code>0117 # define PUT(F, S, N)   _IO_sputn ((F), (S), (N))
+</code></pre>
+
+<p>继续跟踪<code>_IO_sputn()</code>，找到<code>/libio/libioP.h</code></p>
+
+<pre><code>0381 #define _IO_sputn(__fp, __s, __n) _IO_XSPUTN (__fp, __s, __n)
+</code></pre>
+
+<p>而<code>_IO_XSPUTN</code>实际上调用了<code>stdout</code>变量的<code>__xsputn()</code>方法</p>
+
+<pre><code>// /libio/libioP.h
+
+0173 #define _IO_XSPUTN(FP, DATA, N) JUMP2 (__xsputn, FP, DATA, N)
+
+0122 #define JUMP2(FUNC, THIS, X1, X2) (_IO_JUMPS_FUNC(THIS)-&gt;FUNC) (THIS, X1, X2)
+
+0115 # define _IO_JUMPS_FUNC(THIS) _IO_JUMPS ((struct _IO_FILE_plus *) (THIS))
+
+0105 #define _IO_JUMPS(THIS) (THIS)-&gt;vtable
+
+...
+
+0325 struct _IO_FILE_plus
+0326 {
+0327   _IO_FILE file;
+0328   const struct _IO_jump_t *vtable;
+0329 }; 
+
+0290 struct _IO_jump_t
+0291 {
+0292     JUMP_FIELD(size_t, __dummy);
+0293     JUMP_FIELD(size_t, __dummy2);
+0294     JUMP_FIELD(_IO_finish_t, __finish);
+0295     JUMP_FIELD(_IO_overflow_t, __overflow);
+0296     JUMP_FIELD(_IO_underflow_t, __underflow);
+0297     JUMP_FIELD(_IO_underflow_t, __uflow);
+0298     JUMP_FIELD(_IO_pbackfail_t, __pbackfail);
+0299     /* showmany */
+0300     JUMP_FIELD(_IO_xsputn_t, __xsputn);
+0301     JUMP_FIELD(_IO_xsgetn_t, __xsgetn);
+0302     JUMP_FIELD(_IO_seekoff_t, __seekoff);
+0303     JUMP_FIELD(_IO_seekpos_t, __seekpos);
+0304     JUMP_FIELD(_IO_setbuf_t, __setbuf);
+0305     JUMP_FIELD(_IO_sync_t, __sync);
+0306     JUMP_FIELD(_IO_doallocate_t, __doallocate);
+0307     JUMP_FIELD(_IO_read_t, __read);
+0308     JUMP_FIELD(_IO_write_t, __write);
+0309     JUMP_FIELD(_IO_seek_t, __seek);
+0310     JUMP_FIELD(_IO_close_t, __close);
+0311     JUMP_FIELD(_IO_stat_t, __stat);
+0312     JUMP_FIELD(_IO_showmanyc_t, __showmanyc);
+0313     JUMP_FIELD(_IO_imbue_t, __imbue);
+0314 #if 0
+0315     get_column;
+0316     set_column;
+0317 #endif
+0318 };
+</code></pre>
+
+<p>下面要找到<code>stdout</code>的<code>__xsputn()</code>的实现</p>
+
+<pre><code>&gt; /libio/stdio.c
+
+// 发现 stdout 即 _IO_2_1_stdout_ 
+0034 _IO_FILE *stdout = (FILE *) &amp;_IO_2_1_stdout_; 
+
+&gt; /libio/stdfiles.c
+
+// 使用 DEF_STDFILE 宏初始化 _IO_2_1_stdout_
+0069 DEF_STDFILE(_IO_2_1_stdout_, 1, &amp;_IO_2_1_stdin_, _IO_NO_READS);
+
+// 发现函数列表为 _IO_file_jumps
+0062   struct _IO_FILE_plus NAME \
+0063     = {FILEBUF_LITERAL(CHAIN, FLAGS, FD, NULL), \
+0064        &amp;_IO_file_jumps};
+
+&gt; /libio/fileops.c
+
+// 找到 _IO_file_jumps
+1541 const struct _IO_jump_t _IO_file_jumps =
+1542 {
+1543   JUMP_INIT_DUMMY,
+1544   JUMP_INIT(finish, _IO_file_finish),
+1545   JUMP_INIT(overflow, _IO_file_overflow),
+1546   JUMP_INIT(underflow, _IO_file_underflow),
+1547   JUMP_INIT(uflow, _IO_default_uflow),
+1548   JUMP_INIT(pbackfail, _IO_default_pbackfail),
+1549   JUMP_INIT(xsputn, _IO_file_xsputn),
+1550   JUMP_INIT(xsgetn, _IO_file_xsgetn),
+1551   JUMP_INIT(seekoff, _IO_new_file_seekoff),
+1552   JUMP_INIT(seekpos, _IO_default_seekpos),
+1553   JUMP_INIT(setbuf, _IO_new_file_setbuf),
+1554   JUMP_INIT(sync, _IO_new_file_sync),
+1555   JUMP_INIT(doallocate, _IO_file_doallocate),
+1556   JUMP_INIT(read, _IO_file_read),
+1557   JUMP_INIT(write, _IO_new_file_write),
+1558   JUMP_INIT(seek, _IO_file_seek),
+1559   JUMP_INIT(close, _IO_file_close),
+1560   JUMP_INIT(stat, _IO_file_stat),
+1561   JUMP_INIT(showmanyc, _IO_default_showmanyc),
+1562   JUMP_INIT(imbue, _IO_default_imbue)
+1563 };
+</code></pre>
+
+<p>看到<code>stdout</code>的<code>xsputn</code>实现为<code>IO_file_xsputn</code> ，而<code>IO_file_xsputn</code>是一个带版本的符号，在2.1版本的glibc中符号被替换为<code>_IO_new_file_xsputn</code></p>
+
+<pre><code>1538 versioned_symbol (libc, _IO_new_file_xsputn, _IO_file_xsputn, GLIBC_2_1);
+
+// _IO_new_file_xsputn() 函数定义
+1268 _IO_size_t
+1269 _IO_new_file_xsputn (f, data, n)
+1270      _IO_FILE *f;
+1271      const void *data;
+1272      _IO_size_t n;
+...
+1335       count = new_do_write (f, s, do_write); // 调用了new_do_write
+//
+1348 }
+
+// new_do_write() 函数定义
+0507 static
+0508 _IO_size_t
+0509 new_do_write (fp, data, to_do)
+0510      _IO_FILE *fp;
+0511      const char *data;
+0512      _IO_size_t to_do;
+0513 {
+...
+0530   count = _IO_SYSWRITE (fp, data, to_do); // 调用了 _IO_SYSWRITE 宏
+...
+0539 }
+</code></pre>
+
+<p>调用 <code>_IO_SYSWRITE</code> 宏即为调用<code>stdout</code>的<code>write</code>方法</p>
+
+<pre><code>&gt; /libio/libioP.h 
+
+0246 #define _IO_SYSWRITE(FP, DATA, LEN) JUMP2 (__write, FP, DATA, LEN)
+</code></pre>
+
+<p>在上面提及的 <code>_IO_file_jumps</code> 中找到 <code>__write()</code> 方法的实现为 <code>_IO_new_file_write()</code></p>
+
+<pre><code>&gt; /libio/fileops.c
+
+1241 _IO_ssize_t
+1242 _IO_new_file_write (f, data, n)
+1243      _IO_FILE *f;
+1244      const void *data;
+1245      _IO_ssize_t n;
+1246 {
+...
+1250       _IO_ssize_t count = (__builtin_expect (f-&gt;_flags2
+1251                          &amp; _IO_FLAGS2_NOTCANCEL, 0)
+1252                ? write_not_cancel (f-&gt;_fileno, data, to_do)
+1253                : write (f-&gt;_fileno, data, to_do));
+...
+1266 }
+</code></pre>
+
+<p>调用了<code>write_not_cancel</code>和<code>write</code>函数，在<code>unistd.h</code>中定义</p>
+
+<p><code>write</code>函数为Linux内核编译时根据系统调用表自动生成的函数，即进行了系统调用，将输出文件的文件描述符、字符串首地址、字符串长度传给内核空间。</p>
+
+<h4 id="section-3">内核空间</h4>
+
+<p><strong>对内核空间的分析采用了<code>linux 3.16</code>版本内核</strong></p>
+
+<p>write系统调用的函数定义位于Linux内核源码<code>/fs/read_write.c</code>中：</p>
+
+<pre><code>&gt; /fs/read_write.c
+
+477 SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
+478                 size_t, count)
+479 {
+480         struct file *file;
+481         ssize_t ret = -EBADF;
+482         int fput_needed;
+483 
+484         file = fget_light(fd, &amp;fput_needed);
+485         if (file) {
+486                 loff_t pos = file_pos_read(file);
+487                 ret = vfs_write(file, buf, count, &amp;pos);
+488                 file_pos_write(file, pos);
+489                 fput_light(file, fput_needed);
+490         }
+491 
+492         return ret;
+493 }
+</code></pre>
+
+<p>观察到调用了vfs_write()函数</p>
+
+<pre><code>&gt; /fs/read_write.c
+
+420 ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
+421 {
+...
+435                         ret = file-&gt;f_op-&gt;write(file, buf, count, pos);
+...
+446 }
+</code></pre>
+
+<p>注意到一开始传递给<code>write</code>系统调用的文件描述符为1，编写一个简单程序使用<code>printf()</code>输出一段字符串，观察<code>/proc/[pid]/fd</code>中打开文件列表。发现文件描述符1对应设备<code>/dev/pts/9</code>即伪终端。</p>
+
+<pre><code>$ ll /proc/9303/fd
+总用量 0
+dr-x------ 2 edward edward  0 12月 30 19:36 ./
+dr-xr-xr-x 9 edward edward  0 12月 30 19:36 ../
+lrwx------ 1 edward edward 64 12月 30 19:36 0 -&gt; /dev/pts/9
+lrwx------ 1 edward edward 64 12月 30 19:36 1 -&gt; /dev/pts/9
+lrwx------ 1 edward edward 64 12月 30 19:36 2 -&gt; /dev/pts/9
+</code></pre>
+
+<p>则<code>fget_light()</code>函数会获取到<code>/dev/pts/9</code>的文件结构，使用该文件结构的<code>write</code>方法写入终端。</p>
+
+<p><code>pts</code>设备驱动位于<code>/drivers/tty/pty.c</code></p>
+
+<pre><code>&gt; /drivers/tty/pty.c
+
+114 static int pty_write(struct tty_struct *tty, const unsigned char *buf, int c)
+115 {
+116         struct tty_struct *to = tty-&gt;link;
+117 
+118         if (tty-&gt;stopped)
+119                 return 0;
+120 
+121         if (c &gt; 0) {
+122                 /* Stuff the data into the input queue of the other end */
+123                 c = tty_insert_flip_string(to-&gt;port, buf, c);
+124                 /* And shovel */
+125                 if (c)
+126                         tty_flip_buffer_push(to-&gt;port);
+127         }
+128         return c;
+129 }
+
+&gt; /drivers/tty/tty_flip.h
+
+ 32 static inline int tty_insert_flip_string(struct tty_port *port,
+ 33                 const unsigned char *chars, size_t size)
+ 34 {
+ 35         return tty_insert_flip_string_fixed_flag(port, chars, TTY_NORMAL, size);
+ 36 }
+ 
+&gt; /drivers/tty/tty_buffer.c
+
+294 int tty_insert_flip_string_fixed_flag(struct tty_port *port,
+295                 const unsigned char *chars, char flag, size_t size)
+296 {
+297         int copied = 0;
+298         do {
+299                 int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+300                 int flags = (flag == TTY_NORMAL) ? TTYB_NORMAL : 0;
+301                 int space = __tty_buffer_request_room(port, goal, flags);
+302                 struct tty_buffer *tb = port-&gt;buf.tail;
+303                 if (unlikely(space == 0))
+304                         break;
+305                 memcpy(char_buf_ptr(tb, tb-&gt;used), chars, space);
+306                 if (~tb-&gt;flags &amp; TTYB_NORMAL)
+307                         memset(flag_buf_ptr(tb, tb-&gt;used), flag, space);
+308                 tb-&gt;used += space;
+309                 copied += space;
+310                 chars += space;
+311                 /* There is a small chance that we need to split the data over
+312                    several buffers. If this is the case we must loop */
+313         } while (unlikely(size &gt; copied));
+314         return copied;
+315 }
+</code></pre>
+
+<p>可以看到最终将要输出的字符串拷贝到了输出缓冲区的末尾，之后再通过<code>tty_flip_buffer_push()</code>将缓冲区文件打到屏幕上。</p>
+
+<h3 id="scanf"><code>scanf()</code>函数</h3>
+<p>scanf函数的调用过程与printf大致相同，在此不再赘述。</p>
+
+<h3 id="section-4">参考资料</h3>
+<ul>
+  <li><a href="http://blog.hostilefork.com/where-printf-rubber-meets-road/">“Where the printf() Rubber Meets the Road”</a> - hostilefork.com</li>
+  <li><a href="http://osxr.org/glibc/source/?%21v=glibc-2.17">“glibc Cross Reference”</a> - Cross reference for open source projects</li>
+  <li><a href="http://lxr.free-electrons.com/source/">“Linux Cross Reference”</a> - Free Electrons</li>
+  <li><a href="http://www.cnblogs.com/fanzhidongyzby/p/3519838.html">“Printf背后的故事”</a> - Florian</li>
+</ul>
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">又一个临时的博客</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li>又一个临时的博客</li>
+          <li><a href="mailto:edward.zhu93@gmail.com">edward.zhu93@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/edward-zhu">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">edward-zhu</span>
+            </a>
+          </li>
+          
+
+          
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-3">
+        <p class="text">copyright 2015 Edward Zhu <br> 所有文章采用知识共享署名-非商业性使用 4.0 国际许可协议进行许可。
+</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

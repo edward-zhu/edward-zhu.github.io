@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>进程同步实验</title>
+  <meta name="description" content="1. 实验目的深入学习Linux内核，在学习Linux内核同步机制的同时，深入分析各种同步分析的实现方案，在此基础上设计和编写一套同步原语。">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://edward-zhu.github.io/os_exp/2015/01/03/exp-5.3.html">
+  <link rel="alternate" type="application/rss+xml" title="又一个临时的博客" href="http://edward-zhu.github.io/feed.xml" />
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">又一个临时的博客</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">进程同步实验</h1>
+    <p class="post-meta">Jan 3, 2015</p>
+  </header>
+
+  <article class="post-content">
+    <h2 id="section">1. 实验目的</h2>
+<p>深入学习Linux内核，在学习Linux内核同步机制的同时，深入分析各种同步分析的实现方案，在此基础上设计和编写一套同步原语。</p>
+
+<h2 id="section-1">2. 实验内容</h2>
+<p>设计并实现一个新的同步原语，该源于允许多个进程因一个事件而阻塞，知道其他进程产生这个信号为止。当一个进程产生一个事件的信号时，所有因这个时间而阻塞的进程都取消阻塞。如果信号产生时，没有进程因为这个信号而阻塞，那么这个信号无效。</p>
+
+<p>实现下列系统调用：</p>
+
+<ul>
+  <li><code>unsigned long eventopen(int eventNum)</code></li>
+  <li><code>unsigned long eventclose(int eventNum)</code></li>
+  <li><code>unsigned long eventwait(int eventNum)</code></li>
+  <li><code>unsigned long eventsig(int eventNum)</code></li>
+</ul>
+
+<h2 id="section-2">3. 实验原理</h2>
+<p>在深入学习软中断信号，信号量和管道的动作原理和实现机制后，我们知道，一个事件必须有一个事件号，一系列的进程等待这个事件发生，那么肯定需要一个等待队列，所以睡眠的进程就放到这个队列中去。通过考察Linux中如<code>wake_up()</code>、<code>sleep_on()</code>等的实现我们将构建上述同步原语。</p>
+
+<h3 id="section-3">事件队列</h3>
+
+<p>首先，设计一个事件队列类型</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">__myevent</span> <span class="p">{</span>
+	<span class="kt">int</span> <span class="n">eventNum</span><span class="p">;</span> <span class="c1">// 事件编号</span>
+	<span class="kt">wait_queue_head_t</span> <span class="o">*</span><span class="n">p</span><span class="p">;</span> <span class="c1">// 等待队列头</span>
+	<span class="k">struct</span> <span class="n">__myevent</span> <span class="o">*</span> <span class="n">next</span><span class="p">;</span> <span class="c1">// 指向下一个链表项的指针</span>
+<span class="p">}</span> <span class="kt">myevent_t</span><span class="p">;</span></code></pre></div>
+
+<p>定义全局变量事件列表头指针以及尾指针</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">lpmyevent_head</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">*</span> <span class="n">lpmyevent_end</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span></code></pre></div>
+
+<h3 id="section-4">使进程休眠</h3>
+
+<p>下面来看如何使进程休眠。在Linux系统中要使一个进程休眠有很多种方法，Linux提供了两种高层方法</p>
+
+<ol>
+  <li>调用<code>sleep_on()</code>函数（在3.15版内核中已经被删除）</li>
+  <li>调用<code>wait_event*()</code>函数</li>
+</ol>
+
+<p>下面来分析<code>wait_event()</code>函数的实现：</p>
+
+<pre><code>&gt; /include/linux/wait.h
+
+256 #define wait_event(wq, condition)                                       \
+257 do {                                                                    \
+258         if (condition)                                                  \
+259                 break;                                                  \
+260         __wait_event(wq, condition);                                    \
+261 } while (0)
+</code></pre>
+
+<p>如果等待条件已经实现则不休眠，否则调用<code>__wait_event()</code></p>
+
+<pre><code>&gt; /include/linux/wait.h
+
+240 #define __wait_event(wq, condition)                                     \
+241         (void)___wait_event(wq, condition, TASK_UNINTERRUPTIBLE, 0, 0,  \
+242                             schedule())
+
+206 #define ___wait_event(wq, condition, state, exclusive, ret, cmd)        \
+207 ({                                                                      \
+208         __label__ __out;                                                \
+209         wait_queue_t __wait; // 创建一个等待队列                           \
+210         long __ret = ret;       /* explicit shadow */                   \
+211                                                                         \
+212         INIT_LIST_HEAD(&amp;__wait.task_list);   // 初始化列表头              \
+213         if (exclusive)                                                  \
+214                 __wait.flags = WQ_FLAG_EXCLUSIVE;                       \
+215         else                                                            \
+216                 __wait.flags = 0;                                       \
+217                                                                         \
+218         for (;;) {
+					 // 准备进入休眠                                          \
+219                 long __int = prepare_to_wait_event(&amp;wq, &amp;__wait, state);\
+220                                                                         \
+221                 if (condition) // 如果条件为真则跳出循环                    \
+222                         break;                                          \
+223                                                                         \
+224                 if (___wait_is_interruptible(state) &amp;&amp; __int) {         \
+225                         __ret = __int;                                  \
+226                         if (exclusive) {                                \
+227                                 abort_exclusive_wait(&amp;wq, &amp;__wait,      \
+228                                                      state, NULL);      \
+229                                 goto __out;                             \
+230                         }                                               \
+231                         break;                                          \
+232                 }                                                       \
+233                                                                         \
+234                 cmd; // schedule()                                      \
+235         }                                                               \
+236         finish_wait(&amp;wq, &amp;__wait);   // 结束等待操作                      \
+237 __out:  __ret;                                                          \
+238 })
+
+&gt; /include/linux/wait.h
+
+198 long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
+199 {
+200         unsigned long flags;
+201 
+			 \\ 检查当前进程是否有信号处理
+			 \\（适用于TASK_INTERRUPTIBLE的情况）
+202         if (signal_pending_state(state, current))
+			 \\ 如果有信号处理则返回 -ERESTARTSYS，重新执行该系统调用 
+203                 return -ERESTARTSYS; 
+204 
+			// 设置等待队列项目的进程指针为当前进程的指针
+205         wait-&gt;private = current; 
+206         wait-&gt;func = autoremove_wake_function;
+207 
+208         spin_lock_irqsave(&amp;q-&gt;lock, flags); // 设置循环锁
+209         if (list_empty(&amp;wait-&gt;task_list)) {
+					 // 将当前进程加入等待队列中
+210                 if (wait-&gt;flags &amp; WQ_FLAG_EXCLUSIVE)
+211                         __add_wait_queue_tail(q, wait);
+212                 else
+213                         __add_wait_queue(q, wait);
+214         }
+			// 将当前进程设置为TASK_UNINTERRUPTIBLE状态即不可被信号唤醒
+215         set_current_state(state); 
+216         spin_unlock_irqrestore(&amp;q-&gt;lock, flags); // 解锁
+217 
+218         return 0;
+219 }
+220 EXPORT_SYMBOL(prepare_to_wait_event);
+
+231 void finish_wait(wait_queue_head_t *q, wait_queue_t *wait)
+232 {
+233         unsigned long flags;
+234 
+			// 设置当前任务状态为TASK_RUNNING即运行态
+235         __set_current_state(TASK_RUNNING); 
+236         /*
+237          * We can check for list emptiness outside the lock
+238          * IFF:
+239          *  - we use the "careful" check that verifies both
+240          *    the next and prev pointers, so that there cannot
+241          *    be any half-pending updates in progress on other
+242          *    CPU's that we haven't seen yet (and that might
+243          *    still change the stack area.
+244          * and
+245          *  - all other users take the lock (ie we can only
+246          *    have _one_ other CPU that looks at or modifies
+247          *    the list).
+248          */
+			 // 如果队列非空
+249         if (!list_empty_careful(&amp;wait-&gt;task_list)) {
+					 // 设置循环锁
+250                 spin_lock_irqsave(&amp;q-&gt;lock, flags); 
+					 // 将等待队列项目从等待队列中删除
+251                 list_del_init(&amp;wait-&gt;task_list); 
+					 // 解锁
+252                 spin_unlock_irqrestore(&amp;q-&gt;lock, flags); 
+253         }
+254 }
+</code></pre>
+
+<p>可以看出，使一个进程休眠至少要经过如下过程：</p>
+
+<ol>
+  <li>将进程放入等待队列中</li>
+  <li>将进程的状态设置为<code>TASK_UNINTERRUPTIBLE</code>或者<code>TASK_INTERRUPTIBLE</code> (若是<code>TASK_INTERRUPTIBLE</code>则唤醒线程时要检查是否是被信号所唤醒的，若是则要重新进入休眠）</li>
+  <li>令内核进行进程调度，此时进程真正进入休眠</li>
+  <li>当进程被唤醒，要将进程从等待队列中删除</li>
+</ol>
+
+<p>则我们可以根据这个过程来设计同步原语。</p>
+
+<h2 id="section-5">4. 实验步骤及代码清单</h2>
+<p>####实验环境
+- xubuntu 14.10 @ 2.5GHz Intel Core i5
+- Linux 3.16
+- Parallel Desktop 10</p>
+
+<h3 id="section-6">1. 设计事件队列类型</h3>
+<pre><code>&gt; /kernel/my_event.c
+
+typedef struct __myevent {
+	int eventNum;
+	wait_queue_head_t *p;
+	struct __myevent * next;
+} myevent_t;
+
+myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
+</code></pre>
+
+<h3 id="section-7">2. 实现函数定义</h3>
+
+<h4 id="eventopen-"><code>eventopen</code> 系统调用</h4>
+
+<p>定义<code>open</code>同步原语，当open一个事件的时候有两种情况：一是事件已经存在，只需要返回事件的事件号即可；第二种是事件链表中没有该事件，简单的处理办法直接返回-1，表示时间不存在。当传递参数0的时候，将产生一个新事件。</p>
+
+<p><strong>/kernel/my_event.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">SYSCALL_DEFINE1</span><span class="p">(</span><span class="n">eventopen</span><span class="p">,</span> <span class="kt">int</span><span class="p">,</span> <span class="n">eventNum</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">new</span><span class="p">;</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">prev</span><span class="p">;</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">eventNum</span><span class="p">)</span> <span class="c1">// 如果事件编号不为0</span>
+	<span class="p">{</span>
+		<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">scheventNum</span><span class="p">(</span><span class="n">eventNum</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">prev</span><span class="p">))</span> <span class="c1">// 如果不存在该事件，则返回-1</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="k">else</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="n">eventNum</span><span class="p">;</span> <span class="c1">// 否则返回事件编号</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">else</span>
+	<span class="p">{</span>
+	 	<span class="c1">// 创建一个新事件</span>
+		<span class="n">new</span> <span class="o">=</span> <span class="p">(</span><span class="kt">myevent_t</span> <span class="o">*</span><span class="p">)</span><span class="n">kmalloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">myevent_t</span><span class="p">),</span> <span class="n">GFP_KERNEL</span><span class="p">);</span>
+		<span class="c1">// 为等待队列头分配内存空间</span>
+		<span class="n">new</span><span class="o">-&gt;</span><span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="kt">wait_queue_head_t</span> <span class="o">*</span><span class="p">)</span><span class="n">kmalloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">wait_queue_head_t</span><span class="p">),</span> <span class="n">GFP_KERNEL</span><span class="p">);</span>
+		<span class="c1">// 初始化等待队列</span>
+		<span class="n">init_waitqueue_head</span><span class="p">(</span><span class="n">new</span><span class="o">-&gt;</span><span class="n">p</span><span class="p">);</span>
+		<span class="c1">// 将事件放入事件列表中</span>
+		<span class="n">new</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+		<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">lpmyevent_head</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">new</span><span class="o">-&gt;</span><span class="n">eventNum</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+			<span class="n">lpmyevent_head</span> <span class="o">=</span> <span class="n">lpmyevent_end</span> <span class="o">=</span> <span class="n">new</span><span class="p">;</span>
+			<span class="k">return</span> <span class="n">new</span><span class="o">-&gt;</span><span class="n">eventNum</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="k">else</span>
+		<span class="p">{</span>
+			<span class="n">new</span><span class="o">-&gt;</span><span class="n">eventNum</span> <span class="o">=</span> <span class="n">lpmyevent_end</span><span class="o">-&gt;</span><span class="n">eventNum</span> <span class="o">+</span> <span class="mi">2</span><span class="p">;</span>
+			<span class="n">lpmyevent_end</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">new</span><span class="p">;</span>
+			<span class="n">lpmyevent_end</span> <span class="o">=</span> <span class="n">new</span><span class="p">;</span>
+		<span class="p">}</span>
+		
+		<span class="c1">// 返回新加入的事件编号</span>
+		<span class="k">return</span> <span class="n">new</span><span class="o">-&gt;</span><span class="n">eventNum</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<h4 id="eventwait-"><code>eventwait</code> 系统调用</h4>
+<p>将一个进程加到其要等待的事件队列中去</p>
+
+<p><strong>/kernel/my_event.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">SYSCALL_DEFINE1</span><span class="p">(</span><span class="n">eventwait</span><span class="p">,</span> <span class="kt">int</span><span class="p">,</span> <span class="n">eventNum</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">tmp</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+	<span class="k">if</span> <span class="p">((</span><span class="n">tmp</span> <span class="o">=</span> <span class="n">scheventNum</span><span class="p">(</span><span class="n">eventNum</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">prev</span><span class="p">)))</span> <span class="c1">// 找到事件编号对应事件</span>
+	<span class="p">{</span>
+		<span class="n">printk</span><span class="p">(</span><span class="s">&quot;DECLARE waitqueue.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+		<span class="n">DECLARE_WAITQUEUE</span><span class="p">(</span><span class="n">wait</span><span class="p">,</span> <span class="n">current</span><span class="p">);</span> <span class="c1">// 创建关于当前进程的新的等待队列项</span>
+		<span class="n">printk</span><span class="p">(</span><span class="s">&quot;set state.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+		<span class="n">set_current_state</span><span class="p">(</span><span class="n">TASK_UNINTERRUPTIBLE</span><span class="p">);</span> <span class="c1">// 将当前进程的状态设置为TASK_UNINTERRUPTIBLE</span>
+		<span class="n">printk</span><span class="p">(</span><span class="s">&quot;add wait queue</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+		<span class="n">add_wait_queue</span><span class="p">(</span><span class="n">tmp</span><span class="o">-&gt;</span><span class="n">p</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">wait</span><span class="p">);</span> <span class="c1">// 将当前进程加入等待队列</span>
+		<span class="n">printk</span><span class="p">(</span><span class="s">&quot;schedule()</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+		<span class="n">schedule</span><span class="p">();</span> <span class="c1">// 进行进程调度</span>
+
+		<span class="n">remove_wait_queue</span><span class="p">(</span><span class="n">tmp</span><span class="o">-&gt;</span><span class="n">p</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">wait</span><span class="p">);</span> <span class="c1">// 将进程从等待队列中删除</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// 若未找到则返回0</span>
+<span class="p">}</span></code></pre></div>
+
+<h4 id="eventsig-"><code>eventsig</code> 系统调用</h4>
+<p>定义<code>eventsig(int eventNum)</code>，<code>eventsig()</code>要完成的功能是唤醒所有等待该事件发生的进程。我们只需要在事件列表上找到该事件，然后调用<code>wake_up()</code>。</p>
+
+<p><strong>/kernel/my_event.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">do_eventsig</span><span class="p">(</span><span class="kt">int</span> <span class="n">eventNum</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">tmp</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+	<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">tmp</span> <span class="o">=</span> <span class="n">scheventNum</span><span class="p">(</span><span class="n">eventNum</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">prev</span><span class="p">)))</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="n">wake_up</span><span class="p">(</span><span class="n">tmp</span><span class="o">-&gt;</span><span class="n">p</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">SYSCALL_DEFINE1</span><span class="p">(</span><span class="n">eventsig</span><span class="p">,</span> <span class="kt">int</span><span class="p">,</span> <span class="n">eventNum</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="k">return</span> <span class="n">do_eventsig</span><span class="p">(</span><span class="n">eventNum</span><span class="p">);</span>
+<span class="p">}</span></code></pre></div>
+
+<h4 id="eventclose-"><code>eventclose</code> 系统调用</h4>
+
+<p>至于<code>eventclose()</code>先在事件队列中找到该事件，然后根据事件在链表中的位置进行特定的处理，之后唤醒所有睡眠在该事件上的进程，最后将这个事件从链表中删除，释放内存。</p>
+
+<p><strong>/kernel/my_event.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">SYSCALL_DEFINE1</span><span class="p">(</span><span class="n">eventclose</span><span class="p">,</span> <span class="kt">int</span><span class="p">,</span> <span class="n">eventNum</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">releaseItem</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+	<span class="n">do_eventsig</span><span class="p">(</span><span class="n">eventNum</span><span class="p">);</span>
+	<span class="n">printk</span><span class="p">(</span><span class="s">&quot;before delete.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+	<span class="n">print_event_list</span><span class="p">(</span><span class="n">lpmyevent_head</span><span class="p">);</span>
+
+	<span class="k">if</span><span class="p">((</span><span class="n">releaseItem</span> <span class="o">=</span> <span class="n">scheventNum</span><span class="p">(</span><span class="n">eventNum</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">prev</span><span class="p">)))</span>
+	<span class="p">{</span>
+		<span class="n">printk</span><span class="p">(</span><span class="s">&quot;ready to delete: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">eventNum</span><span class="p">);</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">releaseItem</span> <span class="o">==</span> <span class="n">lpmyevent_end</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">lpmyevent_end</span> <span class="o">=</span> <span class="n">prev</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">releaseItem</span> <span class="o">==</span> <span class="n">lpmyevent_head</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="n">lpmyevent_head</span> <span class="o">=</span> <span class="n">lpmyevent_head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+			<span class="k">goto</span> <span class="n">wake</span><span class="p">;</span>
+		<span class="p">}</span>
+
+		<span class="n">prev</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">releaseItem</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+	<span class="p">}</span>
+<span class="nl">wake</span><span class="p">:</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">releaseItem</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="n">kfree</span><span class="p">(</span><span class="n">releaseItem</span><span class="p">);</span>
+
+		<span class="n">print_event_list</span><span class="p">(</span><span class="n">lpmyevent_head</span><span class="p">);</span>
+		<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="n">printk</span><span class="p">(</span><span class="s">&quot;after delete.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+	<span class="n">printk</span><span class="p">(</span><span class="s">&quot;can&#39;t find : %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">eventNum</span><span class="p">);</span>
+
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<h4 id="scheventnum-"><code>scheventNum</code> 函数</h4>
+<p>找到事件编号对应的事件，返回其指针。若找不到则返回<code>NULL</code>。</p>
+
+<p><strong>/kernel/my_event.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="kt">myevent_t</span> <span class="o">*</span> <span class="nf">scheventNum</span><span class="p">(</span><span class="kt">int</span> <span class="n">eventNum</span><span class="p">,</span> <span class="kt">myevent_t</span> <span class="o">**</span><span class="n">prev</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">lpmyevent_head</span><span class="p">;</span>
+	<span class="o">*</span><span class="n">prev</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+	<span class="k">while</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">tmp</span><span class="o">-&gt;</span><span class="n">eventNum</span> <span class="o">==</span> <span class="n">eventNum</span><span class="p">)</span>
+		<span class="p">{</span>
+			<span class="k">return</span> <span class="n">tmp</span><span class="p">;</span>
+		<span class="p">}</span>
+		<span class="o">*</span><span class="n">prev</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">;</span>
+		<span class="n">tmp</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<h4 id="eventshow-printeventlist"><code>eventshow</code> 系统调用和<code>print_event_list</code></h4>
+<p>实现了一个打印当前事件队列的系统调用。</p>
+
+<p><strong>/kernel/my_event.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">print_event_list</span><span class="p">(</span><span class="kt">myevent_t</span> <span class="o">*</span> <span class="n">head</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">printk</span><span class="p">(</span><span class="n">KERN_DEBUG</span><span class="s">&quot;event_list: &quot;</span><span class="p">);</span>
+	<span class="k">while</span><span class="p">(</span><span class="n">head</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">printk</span><span class="p">(</span><span class="s">&quot; %d&quot;</span><span class="p">,</span> <span class="n">head</span><span class="o">-&gt;</span><span class="n">eventNum</span><span class="p">);</span>
+		<span class="n">head</span> <span class="o">=</span> <span class="n">head</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="n">printk</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">SYSCALL_DEFINE0</span><span class="p">(</span><span class="n">eventshow</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">print_event_list</span><span class="p">(</span><span class="n">lpmyevent_head</span><span class="p">);</span>
+
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<p><img src="/images/5.3/code-1.png" alt="" /></p>
+
+<h3 id="section-8">3. 修改系统调用表</h3>
+<p>在<code>/arch/x86/syscalls/syscall_64.tbl</code>中加入如下内容</p>
+
+<p><strong>/arch/x86/syscalls/syscall_64.tbl</strong></p>
+
+<pre><code># my syscall
+
+320 common eventopen	sys_eventopen
+321 common eventclose	sys_eventclose
+322 common eventwait	sys_eventwait
+323 common eventsig		sys_eventsig
+324 common eventshow	sys_eventshow
+
+# my syscall end
+</code></pre>
+
+<p><img src="/images/5.3/code-2.png" alt="" /></p>
+
+<h3 id="makefile">4. 修改内核编译Makefile</h3>
+<p>在<code>/kernel/Makefile</code>中找到</p>
+
+<p><strong>/kernel/Makefile</strong></p>
+
+<div class="highlight"><pre><code class="language-makefile" data-lang="makefile"><span class="nv">obj-y</span>     <span class="o">=</span> fork.o exec_domain.o panic.o <span class="se">\</span>
+	    cpu.o exit.o itimer.o time.o softirq.o resource.o <span class="se">\</span>
+	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o <span class="se">\</span>
+	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o <span class="se">\</span>
+	    extable.o params.o posix-timers.o <span class="se">\</span>
+	    kthread.o sys_ni.o posix-cpu-timers.o <span class="se">\</span>
+	    hrtimer.o nsproxy.o <span class="se">\</span>
+	    notifier.o ksysfs.o cred.o reboot.o <span class="se">\</span>
+	    async.o range.o groups.o smpboot.o</code></pre></div>
+
+<p>在末尾加入<code>my_event.o</code></p>
+
+<p><strong>/kernel/Makefile</strong></p>
+
+<div class="highlight"><pre><code class="language-makefile" data-lang="makefile"><span class="nv">obj-y</span>     <span class="o">=</span> fork.o exec_domain.o panic.o <span class="se">\</span>
+	    cpu.o exit.o itimer.o time.o softirq.o resource.o <span class="se">\</span>
+	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o <span class="se">\</span>
+	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o <span class="se">\</span>
+	    extable.o params.o posix-timers.o <span class="se">\</span>
+	    kthread.o sys_ni.o posix-cpu-timers.o <span class="se">\</span>
+	    hrtimer.o nsproxy.o <span class="se">\</span>
+	    notifier.o ksysfs.o cred.o reboot.o <span class="se">\</span>
+	    async.o range.o groups.o smpboot.o my_event.o</code></pre></div>
+
+<h3 id="section-9">5. 编译内核</h3>
+
+<pre><code># make mrproper
+# make localconfig // 使用本地内核设置以减少编译时间
+# make -j4
+# make modules_install
+# make install
+</code></pre>
+
+<h3 id="section-10">6. 测试</h3>
+
+<h4 id="section-11">测试程序代码</h4>
+
+<p><strong>open.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#include &lt;linux/unistd.h&gt;</span>
+<span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;stdlib.h&gt;</span>
+
+<span class="cp">#define EVENTOPEN 320</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+
+	<span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">i</span> <span class="o">=</span> <span class="n">syscall</span><span class="p">(</span><span class="n">EVENTOPEN</span><span class="p">,</span> <span class="n">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]));</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">&quot;open : %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<p><strong>close.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#include &lt;linux/unistd.h&gt;</span>
+<span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;stdlib.h&gt;</span>
+
+<span class="cp">#define EVENTCLOSE	321</span>
+<span class="cp">#define EVENTWAIT	322</span>
+<span class="cp">#define EVENTSIG	323</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">syscall</span><span class="p">(</span><span class="n">EVENTCLOSE</span><span class="p">,</span> <span class="n">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]));</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">&quot;close : %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<p><strong>wait.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#include &lt;linux/unistd.h&gt;</span>
+<span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;stdlib.h&gt;</span>
+
+<span class="cp">#define EVENTCLOSE	321</span>
+<span class="cp">#define EVENTWAIT	322</span>
+<span class="cp">#define EVENTSIG	323</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">i</span> <span class="o">=</span> <span class="n">syscall</span><span class="p">(</span><span class="n">EVENTWAIT</span><span class="p">,</span> <span class="n">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]));</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">&quot;wait : %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<p><strong>sig.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#include &lt;linux/unistd.h&gt;</span>
+<span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;stdlib.h&gt;</span>
+
+<span class="cp">#define EVENTCLOSE	321</span>
+<span class="cp">#define EVENTWAIT	322</span>
+<span class="cp">#define EVENTSIG	323</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span>
+	<span class="p">{</span>
+		<span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+	<span class="p">}</span>
+
+	<span class="n">syscall</span><span class="p">(</span><span class="n">EVENTSIG</span><span class="p">,</span> <span class="n">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]));</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<p><strong>test.c</strong></p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#include &lt;linux/unistd.h&gt;</span>
+<span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;stdlib.h&gt;</span>
+
+<span class="cp">#define EVENTCLOSE	321</span>
+<span class="cp">#define EVENTWAIT	322</span>
+<span class="cp">#define EVENTSIG	323</span>
+<span class="cp">#define EVENTSHOW	324</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">syscall</span><span class="p">(</span><span class="n">EVENTSHOW</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<p>以上5个程序分别调用了相应的系统调用，参数通过命令行参数传递。分别编译5个程序。</p>
+
+<h4 id="section-12">测试</h4>
+<p>首先使用<code>open</code>原语创建两个事件</p>
+
+<pre><code>$ ./open 0
+$ ./open 0
+</code></pre>
+
+<p>使用<code>eventshow</code>系统调用查看当前事件队列</p>
+
+<pre><code>$ ./test
+$ dmesg
+</code></pre>
+
+<p><img src="/images/5.3/1.png" alt="" />
+<img src="/images/5.3/2.png" alt="" /></p>
+
+<p>观察到事件2和4加入到了事件队列。</p>
+
+<p>使用<code>wait</code>原语使两个进程挂到事件2，在使用一次将一个进程挂到事件4</p>
+
+<pre><code>$ ./wait 2
+$ ./wait 2
+$ ./wait 4
+</code></pre>
+
+<p><img src="/images/5.3/3.png" alt="" />
+<img src="/images/5.3/3-1.png" alt="" /></p>
+
+<p>观察到进程进入休眠</p>
+
+<p>使用<code>pgrep</code>命令查询进程编号，再使用<code>top</code>命令查看进程运行状态</p>
+
+<pre><code>$ pgrep wait
+$ top -p [pid1] -p [pid2]
+</code></pre>
+
+<p><img src="/images/5.3/4.png" alt="" /></p>
+
+<p>观察到进程运行状态为D，即<code>TASK_INTERRUPTIBLE</code>`</p>
+
+<p>使用<code>sig</code>原语将事件2的进程唤醒</p>
+
+<pre><code>$ ./sig 2
+</code></pre>
+
+<p><img src="/images/5.3/5.png" alt="" />
+<img src="/images/5.3/6.png" alt="" /></p>
+
+<p>观察到与进程2相关的两个进程运行结束。</p>
+
+<p>使用close原语将事件4关闭，再使用<code>dmesg</code>命令查看内核日志输出。</p>
+
+<pre><code>$ ./close 4
+$ dmesg
+</code></pre>
+
+<p>发现与事件4对应的进程运行结束，事件列表中事件4已被移除。</p>
+
+<p><img src="/images/5.3/7.png" alt="" />
+<img src="/images/5.3/8.png" alt="" />	</p>
+
+<h2 id="section-13">参考资料</h2>
+<ul>
+  <li><a href="http://jpkc.zju.edu.cn/k/505/pdf/nihe9.pdf">内核实验9：设计一个同步机制</a> - 浙江大学计算机学院</li>
+  <li><a href="http://www.cs.swarthmore.edu/~newhall/cs45/s14/Labs/lab03.php">CS45 Lab 3: Implementing a Synchronization Primative</a> - Swarthmore College Computer Science Department</li>
+  <li><a href="http://lxr.free-electrons.com/source/">Linux Cross Reference</a> - Free Electrons</li>
+  <li><a href="http://www.cnblogs.com/parrynee/archive/2010/01/14/1648165.html">睡眠–TASK_INTERRUPTIBLE and TASK_UNINTERRUPTIBLE</a> - Parry Nee</li>
+</ul>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">又一个临时的博客</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li>又一个临时的博客</li>
+          <li><a href="mailto:edward.zhu93@gmail.com">edward.zhu93@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/edward-zhu">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">edward-zhu</span>
+            </a>
+          </li>
+          
+
+          
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-3">
+        <p class="text">copyright 2015 Edward Zhu <br> 所有文章采用知识共享署名-非商业性使用 4.0 国际许可协议进行许可。
+</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

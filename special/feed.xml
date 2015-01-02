@@ -1,30 +1,2430 @@
----
-layout: null
----
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>{{ site.title | xml_escape }}</title>
-    <description>{{ site.description | xml_escape }}</description>
-    <link>{{ site.url }}{{ site.baseurl }}/</link>
-    <atom:link href="{{ "/feed.xml" | prepend: site.baseurl | prepend: site.url }}" rel="self" type="application/rss+xml"/>
-    <pubDate>{{ site.time | date_to_rfc822 }}</pubDate>
-    <lastBuildDate>{{ site.time | date_to_rfc822 }}</lastBuildDate>
-    <generator>Jekyll v{{ jekyll.version }}</generator>
-    {% for post in site.posts limit:10 %}
+    <title>又一个临时的博客</title>
+    <description>copyright 2015 Edward Zhu &lt;br&gt; 所有文章采用知识共享署名-非商业性使用 4.0 国际许可协议进行许可。
+</description>
+    <link>http://edward-zhu.github.io/</link>
+    <atom:link href="http://edward-zhu.github.io/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 02 Jan 2015 19:47:22 +0800</pubDate>
+    <lastBuildDate>Fri, 02 Jan 2015 19:47:22 +0800</lastBuildDate>
+    <generator>Jekyll v2.5.3</generator>
+    
       <item>
-        <title>{{ post.title | xml_escape }}</title>
-        <description>{{ post.content | xml_escape }}</description>
-        <pubDate>{{ post.date | date_to_rfc822 }}</pubDate>
-        <link>{{ post.url | prepend: site.baseurl | prepend: site.url }}</link>
-        <guid isPermaLink="true">{{ post.url | prepend: site.baseurl | prepend: site.url }}</guid>
-        {% for tag in post.tags %}
-        <category>{{ tag | xml_escape }}</category>
-        {% endfor %}
-        {% for cat in post.categories %}
-        <category>{{ cat | xml_escape }}</category>
-        {% endfor %}
+        <title>文件系统管理实验 - 编程实验1</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;1. 实验目的与内容&lt;/h2&gt;
+&lt;p&gt;在Linux下，编写Shell程序，计算磁盘上所有目录下平均文件个数、所有目录平均长度、所有文件名平均长度。
+通过此实验，了解Linux系统文件管理相关机制&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;2. 程序源码&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;sys/stat.h&amp;gt;
+#include &amp;lt;dirent.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+
+int func(char * path, int * AllFileNumber, int * AllDepthNumber, 
+	int * AllFilenameNumber, int * AllFolderNumber)
+{
+	struct stat statbuf;
+	struct dirent * dirp;
+	DIR * dp;
+	char str1[1000];
+	char * str2;
+	int has_gen_path = 0, ret;
+	size_t len;
+
+	stat(path, &amp;amp;statbuf); // 获取该目录下的文件系统信息
+
+	switch(statbuf.st_mode &amp;amp; S_IFMT) {
+		case S_IFREG: { // 如果是普通文件
+			// 计算文件名长度
+			spos = strrchr(path, &#39;/&#39;);
+			len = strlen(path) - (size_t)(spos - path);
+			*AllFilenameNumber += len;
+			*AllFilenameNumber += strlen(path); // 增加文件名长度
+			*AllFileNumber = * AllFileNumber + 1; // 增加文件数
+			*AllDepthNumber = *AllDepthNumber + 1; // 增加文件深度
+			break;
+		}
+
+		case S_IFDIR: {
+			*AllDepthNumber = *AllDepthNumber + 1; // 增加文件深度
+			*AllFolderNumber = *AllFolderNumber + 1; // 增加文件夹数
+			dp = opendir(path);	 // 打开文件夹
+			if (dp == NULL) {
+				return 0; // 若打开失败则返回0
+			}
+			while((dirp = readdir(dp)) != NULL) { // 遍历文件夹下的所有文件
+				if ((strcmp(dirp-&amp;gt;d_name, &quot;.&quot;) == 0) 
+					|| strcmp(dirp-&amp;gt;d_name, &quot;..&quot;) == 0)
+				{
+					continue; // 若文件夹是&quot;.&quot;或者&quot;..&quot;则跳过
+				}
+				// 如果还没有将当前路径存至str1
+				if (has_gen_path == 0) { 
+					strcpy(str1, path); // 将当前目录存至str1
+					// 获取当前路径字符串末尾指针
+					str2 = str1 + strlen(str1); 
+					has_gen_path = 1;
+				}
+				*str2++ = &#39;/&#39;;
+				*str2 = &#39;\0&#39;;
+				// 将当前文件名拷贝至当前路径末尾
+				strcpy(str2, dirp-&amp;gt;d_name); 
+				// 递归扫描子目录
+				ret = func(str1, AllFileNumber, 
+					AllDepthNumber, AllFilenameNumber, AllFolderNumber);
+				*str2--;
+				*str2 = &#39;\0&#39;;
+				
+			}
+			closedir(dp); // 关闭当前文件夹
+			break;
+		}
+	}
+	return 1;
+}
+
+int main(int argc, char * argv[])
+{
+	int ret;
+	int AllFileNumber = 0;
+	int AllDepthNumber = 0;
+	int AllFilenameNumber = 0;
+	int AllFolderNumber = 0;
+	printf(&quot;%s\n&quot;, argv[1]);
+	ret = func(argv[1], &amp;amp;AllFileNumber, 
+		&amp;amp;AllDepthNumber, &amp;amp;AllFilenameNumber, &amp;amp;AllFolderNumber);
+	printf(&quot;The average file # is %d\n&quot;, 
+		AllFileNumber / AllFolderNumber);
+	printf(&quot;The average file depth # is %d\n&quot;, 
+		AllDepthNumber / AllFolderNumber);
+	printf(&quot;The average filename number is %d\n&quot;, 
+		AllFilenameNumber / AllFileNumber);
+
+	return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;3. 实验结果&lt;/h2&gt;
+&lt;p&gt;运行程序&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./fs-exp ~
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/7.2/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;如图，程序正确扫描了该目录下所有文件和子目录，并计算出该目录下每个子文件夹中的平均文件数，平均文件深度，以及所有文件的平均文件名长度。&lt;/p&gt;
+
+</description>
+        <pubDate>Sat, 03 Jan 2015 03:44:00 +0800</pubDate>
+        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-7.2.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-7.2.html</guid>
+        
+        
+        <category>os_exp</category>
+        
       </item>
-    {% endfor %}
+    
+      <item>
+        <title>I/O设备管理实验 - 代码分析</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;1. 实验内容&lt;/h2&gt;
+&lt;p&gt;阅读 Linux/Minux 中以下模块的调用主线&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;code&gt;print()&lt;/code&gt;函数内部实现模块调用主线&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;scanf()&lt;/code&gt;函数内部实现模块调用主线&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;写出分析报告&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;2. 分析报告&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;以下报告采用&lt;code&gt;glibc 2.17&lt;/code&gt;进行分析&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;printf-&quot;&gt;&lt;code&gt;printf()&lt;/code&gt; 函数&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-2&quot;&gt;用户空间&lt;/h4&gt;
+
+&lt;p&gt;首先，在&lt;code&gt;/libio/stdio.h&lt;/code&gt;中找到&lt;code&gt;printf()&lt;/code&gt;的函数声明&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;0358 /* Write formatted output to stdout.
+0359 
+0360    This function is a possible cancellation point and therefore not
+0361    marked with __THROW.  */
+0362 extern int printf (const char *__restrict __format, ...);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;但是实际上没有名为&lt;code&gt;printf()&lt;/code&gt;的函数定义，在&lt;code&gt;/stdio-common/printf.c&lt;/code&gt;中找到强别名替换&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;0040 ldbl_strong_alias (__printf, printf);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;print&lt;/code&gt;被替换成了&lt;code&gt;__printf&lt;/code&gt;，在相同文件内找到&lt;code&gt;__printf()&lt;/code&gt;的定义&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;0024 /* Write formatted output to stdout from the format string FORMAT.  */
+0025 /* VARARGS1 */
+0026 int
+0027 __printf (const char *format, ...)
+0028 {
+0029   va_list arg;
+0030   int done;
+0031 
+0032   va_start (arg, format);
+0033   done = vfprintf (stdout, format, arg);
+0034   va_end (arg);
+0035 
+0036   return done;
+0037 }	
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;观察到调用了&lt;code&gt;vfprintf()&lt;/code&gt;函数&lt;/p&gt;
+
+&lt;p&gt;在&lt;code&gt;/stdio-common/vfprintf.c&lt;/code&gt;中找到&lt;code&gt;vfprintf()&lt;/code&gt;的定义，在定义使用&lt;code&gt;outstring()&lt;/code&gt;来输出字符串。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;0220 int
+0221 vfprintf (FILE *s, const CHAR_T *format, va_list ap)
+0222 {
+...
+0756       outstring (string, workend - string);                   \
+...
+2057 }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在同文件中找到&lt;code&gt;outstring()&lt;/code&gt;宏的定义&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;0160 #define outstring(String, Len)
+...
+0164       if ((size_t) PUT (s, (String), (Len)) != (size_t) (Len))            \
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;发现调用了&lt;code&gt;PUT()&lt;/code&gt;，其定义在117行&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;0117 # define PUT(F, S, N)   _IO_sputn ((F), (S), (N))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;继续跟踪&lt;code&gt;_IO_sputn()&lt;/code&gt;，找到&lt;code&gt;/libio/libioP.h&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;0381 #define _IO_sputn(__fp, __s, __n) _IO_XSPUTN (__fp, __s, __n)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;而&lt;code&gt;_IO_XSPUTN&lt;/code&gt;实际上调用了&lt;code&gt;stdout&lt;/code&gt;变量的&lt;code&gt;__xsputn()&lt;/code&gt;方法&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// /libio/libioP.h
+
+0173 #define _IO_XSPUTN(FP, DATA, N) JUMP2 (__xsputn, FP, DATA, N)
+
+0122 #define JUMP2(FUNC, THIS, X1, X2) (_IO_JUMPS_FUNC(THIS)-&amp;gt;FUNC) (THIS, X1, X2)
+
+0115 # define _IO_JUMPS_FUNC(THIS) _IO_JUMPS ((struct _IO_FILE_plus *) (THIS))
+
+0105 #define _IO_JUMPS(THIS) (THIS)-&amp;gt;vtable
+
+...
+
+0325 struct _IO_FILE_plus
+0326 {
+0327   _IO_FILE file;
+0328   const struct _IO_jump_t *vtable;
+0329 }; 
+
+0290 struct _IO_jump_t
+0291 {
+0292     JUMP_FIELD(size_t, __dummy);
+0293     JUMP_FIELD(size_t, __dummy2);
+0294     JUMP_FIELD(_IO_finish_t, __finish);
+0295     JUMP_FIELD(_IO_overflow_t, __overflow);
+0296     JUMP_FIELD(_IO_underflow_t, __underflow);
+0297     JUMP_FIELD(_IO_underflow_t, __uflow);
+0298     JUMP_FIELD(_IO_pbackfail_t, __pbackfail);
+0299     /* showmany */
+0300     JUMP_FIELD(_IO_xsputn_t, __xsputn);
+0301     JUMP_FIELD(_IO_xsgetn_t, __xsgetn);
+0302     JUMP_FIELD(_IO_seekoff_t, __seekoff);
+0303     JUMP_FIELD(_IO_seekpos_t, __seekpos);
+0304     JUMP_FIELD(_IO_setbuf_t, __setbuf);
+0305     JUMP_FIELD(_IO_sync_t, __sync);
+0306     JUMP_FIELD(_IO_doallocate_t, __doallocate);
+0307     JUMP_FIELD(_IO_read_t, __read);
+0308     JUMP_FIELD(_IO_write_t, __write);
+0309     JUMP_FIELD(_IO_seek_t, __seek);
+0310     JUMP_FIELD(_IO_close_t, __close);
+0311     JUMP_FIELD(_IO_stat_t, __stat);
+0312     JUMP_FIELD(_IO_showmanyc_t, __showmanyc);
+0313     JUMP_FIELD(_IO_imbue_t, __imbue);
+0314 #if 0
+0315     get_column;
+0316     set_column;
+0317 #endif
+0318 };
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;下面要找到&lt;code&gt;stdout&lt;/code&gt;的&lt;code&gt;__xsputn()&lt;/code&gt;的实现&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; /libio/stdio.c
+
+// 发现 stdout 即 _IO_2_1_stdout_ 
+0034 _IO_FILE *stdout = (FILE *) &amp;amp;_IO_2_1_stdout_; 
+
+&amp;gt; /libio/stdfiles.c
+
+// 使用 DEF_STDFILE 宏初始化 _IO_2_1_stdout_
+0069 DEF_STDFILE(_IO_2_1_stdout_, 1, &amp;amp;_IO_2_1_stdin_, _IO_NO_READS);
+
+// 发现函数列表为 _IO_file_jumps
+0062   struct _IO_FILE_plus NAME \
+0063     = {FILEBUF_LITERAL(CHAIN, FLAGS, FD, NULL), \
+0064        &amp;amp;_IO_file_jumps};
+
+&amp;gt; /libio/fileops.c
+
+// 找到 _IO_file_jumps
+1541 const struct _IO_jump_t _IO_file_jumps =
+1542 {
+1543   JUMP_INIT_DUMMY,
+1544   JUMP_INIT(finish, _IO_file_finish),
+1545   JUMP_INIT(overflow, _IO_file_overflow),
+1546   JUMP_INIT(underflow, _IO_file_underflow),
+1547   JUMP_INIT(uflow, _IO_default_uflow),
+1548   JUMP_INIT(pbackfail, _IO_default_pbackfail),
+1549   JUMP_INIT(xsputn, _IO_file_xsputn),
+1550   JUMP_INIT(xsgetn, _IO_file_xsgetn),
+1551   JUMP_INIT(seekoff, _IO_new_file_seekoff),
+1552   JUMP_INIT(seekpos, _IO_default_seekpos),
+1553   JUMP_INIT(setbuf, _IO_new_file_setbuf),
+1554   JUMP_INIT(sync, _IO_new_file_sync),
+1555   JUMP_INIT(doallocate, _IO_file_doallocate),
+1556   JUMP_INIT(read, _IO_file_read),
+1557   JUMP_INIT(write, _IO_new_file_write),
+1558   JUMP_INIT(seek, _IO_file_seek),
+1559   JUMP_INIT(close, _IO_file_close),
+1560   JUMP_INIT(stat, _IO_file_stat),
+1561   JUMP_INIT(showmanyc, _IO_default_showmanyc),
+1562   JUMP_INIT(imbue, _IO_default_imbue)
+1563 };
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;看到&lt;code&gt;stdout&lt;/code&gt;的&lt;code&gt;xsputn&lt;/code&gt;实现为&lt;code&gt;IO_file_xsputn&lt;/code&gt; ，而&lt;code&gt;IO_file_xsputn&lt;/code&gt;是一个带版本的符号，在2.1版本的glibc中符号被替换为&lt;code&gt;_IO_new_file_xsputn&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;1538 versioned_symbol (libc, _IO_new_file_xsputn, _IO_file_xsputn, GLIBC_2_1);
+
+// _IO_new_file_xsputn() 函数定义
+1268 _IO_size_t
+1269 _IO_new_file_xsputn (f, data, n)
+1270      _IO_FILE *f;
+1271      const void *data;
+1272      _IO_size_t n;
+...
+1335       count = new_do_write (f, s, do_write); // 调用了new_do_write
+//
+1348 }
+
+// new_do_write() 函数定义
+0507 static
+0508 _IO_size_t
+0509 new_do_write (fp, data, to_do)
+0510      _IO_FILE *fp;
+0511      const char *data;
+0512      _IO_size_t to_do;
+0513 {
+...
+0530   count = _IO_SYSWRITE (fp, data, to_do); // 调用了 _IO_SYSWRITE 宏
+...
+0539 }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;调用 &lt;code&gt;_IO_SYSWRITE&lt;/code&gt; 宏即为调用&lt;code&gt;stdout&lt;/code&gt;的&lt;code&gt;write&lt;/code&gt;方法&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; /libio/libioP.h 
+
+0246 #define _IO_SYSWRITE(FP, DATA, LEN) JUMP2 (__write, FP, DATA, LEN)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在上面提及的 &lt;code&gt;_IO_file_jumps&lt;/code&gt; 中找到 &lt;code&gt;__write()&lt;/code&gt; 方法的实现为 &lt;code&gt;_IO_new_file_write()&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; /libio/fileops.c
+
+1241 _IO_ssize_t
+1242 _IO_new_file_write (f, data, n)
+1243      _IO_FILE *f;
+1244      const void *data;
+1245      _IO_ssize_t n;
+1246 {
+...
+1250       _IO_ssize_t count = (__builtin_expect (f-&amp;gt;_flags2
+1251                          &amp;amp; _IO_FLAGS2_NOTCANCEL, 0)
+1252                ? write_not_cancel (f-&amp;gt;_fileno, data, to_do)
+1253                : write (f-&amp;gt;_fileno, data, to_do));
+...
+1266 }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;调用了&lt;code&gt;write_not_cancel&lt;/code&gt;和&lt;code&gt;write&lt;/code&gt;函数，在&lt;code&gt;unistd.h&lt;/code&gt;中定义&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;write&lt;/code&gt;函数为Linux内核编译时根据系统调用表自动生成的函数，即进行了系统调用，将输出文件的文件描述符、字符串首地址、字符串长度传给内核空间。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-3&quot;&gt;内核空间&lt;/h4&gt;
+
+&lt;p&gt;&lt;strong&gt;对内核空间的分析采用了&lt;code&gt;linux 3.16&lt;/code&gt;版本内核&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;write系统调用的函数定义位于Linux内核源码&lt;code&gt;/fs/read_write.c&lt;/code&gt;中：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; /fs/read_write.c
+
+477 SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
+478                 size_t, count)
+479 {
+480         struct file *file;
+481         ssize_t ret = -EBADF;
+482         int fput_needed;
+483 
+484         file = fget_light(fd, &amp;amp;fput_needed);
+485         if (file) {
+486                 loff_t pos = file_pos_read(file);
+487                 ret = vfs_write(file, buf, count, &amp;amp;pos);
+488                 file_pos_write(file, pos);
+489                 fput_light(file, fput_needed);
+490         }
+491 
+492         return ret;
+493 }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;观察到调用了vfs_write()函数&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; /fs/read_write.c
+
+420 ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
+421 {
+...
+435                         ret = file-&amp;gt;f_op-&amp;gt;write(file, buf, count, pos);
+...
+446 }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;注意到一开始传递给&lt;code&gt;write&lt;/code&gt;系统调用的文件描述符为1，编写一个简单程序使用&lt;code&gt;printf()&lt;/code&gt;输出一段字符串，观察&lt;code&gt;/proc/[pid]/fd&lt;/code&gt;中打开文件列表。发现文件描述符1对应设备&lt;code&gt;/dev/pts/9&lt;/code&gt;即伪终端。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ll /proc/9303/fd
+总用量 0
+dr-x------ 2 edward edward  0 12月 30 19:36 ./
+dr-xr-xr-x 9 edward edward  0 12月 30 19:36 ../
+lrwx------ 1 edward edward 64 12月 30 19:36 0 -&amp;gt; /dev/pts/9
+lrwx------ 1 edward edward 64 12月 30 19:36 1 -&amp;gt; /dev/pts/9
+lrwx------ 1 edward edward 64 12月 30 19:36 2 -&amp;gt; /dev/pts/9
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;则&lt;code&gt;fget_light()&lt;/code&gt;函数会获取到&lt;code&gt;/dev/pts/9&lt;/code&gt;的文件结构，使用该文件结构的&lt;code&gt;write&lt;/code&gt;方法写入终端。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;pts&lt;/code&gt;设备驱动位于&lt;code&gt;/drivers/tty/pty.c&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; /drivers/tty/pty.c
+
+114 static int pty_write(struct tty_struct *tty, const unsigned char *buf, int c)
+115 {
+116         struct tty_struct *to = tty-&amp;gt;link;
+117 
+118         if (tty-&amp;gt;stopped)
+119                 return 0;
+120 
+121         if (c &amp;gt; 0) {
+122                 /* Stuff the data into the input queue of the other end */
+123                 c = tty_insert_flip_string(to-&amp;gt;port, buf, c);
+124                 /* And shovel */
+125                 if (c)
+126                         tty_flip_buffer_push(to-&amp;gt;port);
+127         }
+128         return c;
+129 }
+
+&amp;gt; /drivers/tty/tty_flip.h
+
+ 32 static inline int tty_insert_flip_string(struct tty_port *port,
+ 33                 const unsigned char *chars, size_t size)
+ 34 {
+ 35         return tty_insert_flip_string_fixed_flag(port, chars, TTY_NORMAL, size);
+ 36 }
+ 
+&amp;gt; /drivers/tty/tty_buffer.c
+
+294 int tty_insert_flip_string_fixed_flag(struct tty_port *port,
+295                 const unsigned char *chars, char flag, size_t size)
+296 {
+297         int copied = 0;
+298         do {
+299                 int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+300                 int flags = (flag == TTY_NORMAL) ? TTYB_NORMAL : 0;
+301                 int space = __tty_buffer_request_room(port, goal, flags);
+302                 struct tty_buffer *tb = port-&amp;gt;buf.tail;
+303                 if (unlikely(space == 0))
+304                         break;
+305                 memcpy(char_buf_ptr(tb, tb-&amp;gt;used), chars, space);
+306                 if (~tb-&amp;gt;flags &amp;amp; TTYB_NORMAL)
+307                         memset(flag_buf_ptr(tb, tb-&amp;gt;used), flag, space);
+308                 tb-&amp;gt;used += space;
+309                 copied += space;
+310                 chars += space;
+311                 /* There is a small chance that we need to split the data over
+312                    several buffers. If this is the case we must loop */
+313         } while (unlikely(size &amp;gt; copied));
+314         return copied;
+315 }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;可以看到最终将要输出的字符串拷贝到了输出缓冲区的末尾，之后再通过&lt;code&gt;tty_flip_buffer_push()&lt;/code&gt;将缓冲区文件打到屏幕上。&lt;/p&gt;
+
+&lt;h3 id=&quot;scanf&quot;&gt;&lt;code&gt;scanf()&lt;/code&gt;函数&lt;/h3&gt;
+&lt;p&gt;scanf函数的调用过程与printf大致相同，在此不再赘述。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-4&quot;&gt;参考资料&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://blog.hostilefork.com/where-printf-rubber-meets-road/&quot;&gt;“Where the printf() Rubber Meets the Road”&lt;/a&gt; - hostilefork.com&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://osxr.org/glibc/source/?%21v=glibc-2.17&quot;&gt;“glibc Cross Reference”&lt;/a&gt; - Cross reference for open source projects&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://lxr.free-electrons.com/source/&quot;&gt;“Linux Cross Reference”&lt;/a&gt; - Free Electrons&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.cnblogs.com/fanzhidongyzby/p/3519838.html&quot;&gt;“Printf背后的故事”&lt;/a&gt; - Florian&lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+        <pubDate>Sat, 03 Jan 2015 03:18:00 +0800</pubDate>
+        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-6.2.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-6.2.html</guid>
+        
+        
+        <category>os_exp</category>
+        
+      </item>
+    
+      <item>
+        <title>进程同步实验</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;1. 实验目的&lt;/h2&gt;
+&lt;p&gt;深入学习Linux内核，在学习Linux内核同步机制的同时，深入分析各种同步分析的实现方案，在此基础上设计和编写一套同步原语。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;2. 实验内容&lt;/h2&gt;
+&lt;p&gt;设计并实现一个新的同步原语，该源于允许多个进程因一个事件而阻塞，知道其他进程产生这个信号为止。当一个进程产生一个事件的信号时，所有因这个时间而阻塞的进程都取消阻塞。如果信号产生时，没有进程因为这个信号而阻塞，那么这个信号无效。&lt;/p&gt;
+
+&lt;p&gt;实现下列系统调用：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code&gt;unsigned long eventopen(int eventNum)&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;unsigned long eventclose(int eventNum)&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;unsigned long eventwait(int eventNum)&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;unsigned long eventsig(int eventNum)&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;3. 实验原理&lt;/h2&gt;
+&lt;p&gt;在深入学习软中断信号，信号量和管道的动作原理和实现机制后，我们知道，一个事件必须有一个事件号，一系列的进程等待这个事件发生，那么肯定需要一个等待队列，所以睡眠的进程就放到这个队列中去。通过考察Linux中如&lt;code&gt;wake_up()&lt;/code&gt;、&lt;code&gt;sleep_on()&lt;/code&gt;等的实现我们将构建上述同步原语。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-3&quot;&gt;事件队列&lt;/h3&gt;
+
+&lt;p&gt;首先，设计一个事件队列类型&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__myevent&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 事件编号&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;wait_queue_head_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 等待队列头&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__myevent&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 指向下一个链表项的指针&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;定义全局变量事件列表头指针以及尾指针&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lpmyevent_end&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;section-4&quot;&gt;使进程休眠&lt;/h3&gt;
+
+&lt;p&gt;下面来看如何使进程休眠。在Linux系统中要使一个进程休眠有很多种方法，Linux提供了两种高层方法&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;调用&lt;code&gt;sleep_on()&lt;/code&gt;函数（在3.15版内核中已经被删除）&lt;/li&gt;
+  &lt;li&gt;调用&lt;code&gt;wait_event*()&lt;/code&gt;函数&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;下面来分析&lt;code&gt;wait_event()&lt;/code&gt;函数的实现：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; /include/linux/wait.h
+
+256 #define wait_event(wq, condition)                                       \
+257 do {                                                                    \
+258         if (condition)                                                  \
+259                 break;                                                  \
+260         __wait_event(wq, condition);                                    \
+261 } while (0)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果等待条件已经实现则不休眠，否则调用&lt;code&gt;__wait_event()&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; /include/linux/wait.h
+
+240 #define __wait_event(wq, condition)                                     \
+241         (void)___wait_event(wq, condition, TASK_UNINTERRUPTIBLE, 0, 0,  \
+242                             schedule())
+
+206 #define ___wait_event(wq, condition, state, exclusive, ret, cmd)        \
+207 ({                                                                      \
+208         __label__ __out;                                                \
+209         wait_queue_t __wait; // 创建一个等待队列                           \
+210         long __ret = ret;       /* explicit shadow */                   \
+211                                                                         \
+212         INIT_LIST_HEAD(&amp;amp;__wait.task_list);   // 初始化列表头              \
+213         if (exclusive)                                                  \
+214                 __wait.flags = WQ_FLAG_EXCLUSIVE;                       \
+215         else                                                            \
+216                 __wait.flags = 0;                                       \
+217                                                                         \
+218         for (;;) {
+					 // 准备进入休眠                                          \
+219                 long __int = prepare_to_wait_event(&amp;amp;wq, &amp;amp;__wait, state);\
+220                                                                         \
+221                 if (condition) // 如果条件为真则跳出循环                    \
+222                         break;                                          \
+223                                                                         \
+224                 if (___wait_is_interruptible(state) &amp;amp;&amp;amp; __int) {         \
+225                         __ret = __int;                                  \
+226                         if (exclusive) {                                \
+227                                 abort_exclusive_wait(&amp;amp;wq, &amp;amp;__wait,      \
+228                                                      state, NULL);      \
+229                                 goto __out;                             \
+230                         }                                               \
+231                         break;                                          \
+232                 }                                                       \
+233                                                                         \
+234                 cmd; // schedule()                                      \
+235         }                                                               \
+236         finish_wait(&amp;amp;wq, &amp;amp;__wait);   // 结束等待操作                      \
+237 __out:  __ret;                                                          \
+238 })
+
+&amp;gt; /include/linux/wait.h
+
+198 long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
+199 {
+200         unsigned long flags;
+201 
+			 \\ 检查当前进程是否有信号处理
+			 \\（适用于TASK_INTERRUPTIBLE的情况）
+202         if (signal_pending_state(state, current))
+			 \\ 如果有信号处理则返回 -ERESTARTSYS，重新执行该系统调用 
+203                 return -ERESTARTSYS; 
+204 
+			// 设置等待队列项目的进程指针为当前进程的指针
+205         wait-&amp;gt;private = current; 
+206         wait-&amp;gt;func = autoremove_wake_function;
+207 
+208         spin_lock_irqsave(&amp;amp;q-&amp;gt;lock, flags); // 设置循环锁
+209         if (list_empty(&amp;amp;wait-&amp;gt;task_list)) {
+					 // 将当前进程加入等待队列中
+210                 if (wait-&amp;gt;flags &amp;amp; WQ_FLAG_EXCLUSIVE)
+211                         __add_wait_queue_tail(q, wait);
+212                 else
+213                         __add_wait_queue(q, wait);
+214         }
+			// 将当前进程设置为TASK_UNINTERRUPTIBLE状态即不可被信号唤醒
+215         set_current_state(state); 
+216         spin_unlock_irqrestore(&amp;amp;q-&amp;gt;lock, flags); // 解锁
+217 
+218         return 0;
+219 }
+220 EXPORT_SYMBOL(prepare_to_wait_event);
+
+231 void finish_wait(wait_queue_head_t *q, wait_queue_t *wait)
+232 {
+233         unsigned long flags;
+234 
+			// 设置当前任务状态为TASK_RUNNING即运行态
+235         __set_current_state(TASK_RUNNING); 
+236         /*
+237          * We can check for list emptiness outside the lock
+238          * IFF:
+239          *  - we use the &quot;careful&quot; check that verifies both
+240          *    the next and prev pointers, so that there cannot
+241          *    be any half-pending updates in progress on other
+242          *    CPU&#39;s that we haven&#39;t seen yet (and that might
+243          *    still change the stack area.
+244          * and
+245          *  - all other users take the lock (ie we can only
+246          *    have _one_ other CPU that looks at or modifies
+247          *    the list).
+248          */
+			 // 如果队列非空
+249         if (!list_empty_careful(&amp;amp;wait-&amp;gt;task_list)) {
+					 // 设置循环锁
+250                 spin_lock_irqsave(&amp;amp;q-&amp;gt;lock, flags); 
+					 // 将等待队列项目从等待队列中删除
+251                 list_del_init(&amp;amp;wait-&amp;gt;task_list); 
+					 // 解锁
+252                 spin_unlock_irqrestore(&amp;amp;q-&amp;gt;lock, flags); 
+253         }
+254 }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;可以看出，使一个进程休眠至少要经过如下过程：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;将进程放入等待队列中&lt;/li&gt;
+  &lt;li&gt;将进程的状态设置为&lt;code&gt;TASK_UNINTERRUPTIBLE&lt;/code&gt;或者&lt;code&gt;TASK_INTERRUPTIBLE&lt;/code&gt; (若是&lt;code&gt;TASK_INTERRUPTIBLE&lt;/code&gt;则唤醒线程时要检查是否是被信号所唤醒的，若是则要重新进入休眠）&lt;/li&gt;
+  &lt;li&gt;令内核进行进程调度，此时进程真正进入休眠&lt;/li&gt;
+  &lt;li&gt;当进程被唤醒，要将进程从等待队列中删除&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;则我们可以根据这个过程来设计同步原语。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-5&quot;&gt;4. 实验步骤及代码清单&lt;/h2&gt;
+&lt;p&gt;####实验环境
+- xubuntu 14.10 @ 2.5GHz Intel Core i5
+- Linux 3.16
+- Parallel Desktop 10&lt;/p&gt;
+
+&lt;h3 id=&quot;section-6&quot;&gt;1. 设计事件队列类型&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;&amp;gt; /kernel/my_event.c
+
+typedef struct __myevent {
+	int eventNum;
+	wait_queue_head_t *p;
+	struct __myevent * next;
+} myevent_t;
+
+myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;section-7&quot;&gt;2. 实现函数定义&lt;/h3&gt;
+
+&lt;h4 id=&quot;eventopen-&quot;&gt;&lt;code&gt;eventopen&lt;/code&gt; 系统调用&lt;/h4&gt;
+
+&lt;p&gt;定义&lt;code&gt;open&lt;/code&gt;同步原语，当open一个事件的时候有两种情况：一是事件已经存在，只需要返回事件的事件号即可；第二种是事件链表中没有该事件，简单的处理办法直接返回-1，表示时间不存在。当传递参数0的时候，将产生一个新事件。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/kernel/my_event.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;n&quot;&gt;SYSCALL_DEFINE1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventopen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 如果事件编号不为0&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;scheventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 如果不存在该事件，则返回-1&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 否则返回事件编号&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	 	&lt;span class=&quot;c1&quot;&gt;// 创建一个新事件&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kmalloc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;sizeof&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GFP_KERNEL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;c1&quot;&gt;// 为等待队列头分配内存空间&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;wait_queue_head_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kmalloc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;sizeof&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;wait_queue_head_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GFP_KERNEL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;c1&quot;&gt;// 初始化等待队列&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;init_waitqueue_head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;c1&quot;&gt;// 将事件放入事件列表中&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lpmyevent_end&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+			&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lpmyevent_end&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;lpmyevent_end&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;lpmyevent_end&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+		
+		&lt;span class=&quot;c1&quot;&gt;// 返回新加入的事件编号&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;eventwait-&quot;&gt;&lt;code&gt;eventwait&lt;/code&gt; 系统调用&lt;/h4&gt;
+&lt;p&gt;将一个进程加到其要等待的事件队列中去&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/kernel/my_event.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;n&quot;&gt;SYSCALL_DEFINE1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventwait&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;scheventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 找到事件编号对应事件&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;DECLARE waitqueue.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;DECLARE_WAITQUEUE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wait&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;current&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 创建关于当前进程的新的等待队列项&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;set state.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;set_current_state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TASK_UNINTERRUPTIBLE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 将当前进程的状态设置为TASK_UNINTERRUPTIBLE&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;add wait queue&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;add_wait_queue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wait&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 将当前进程加入等待队列&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;schedule()&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;schedule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 进行进程调度&lt;/span&gt;
+
+		&lt;span class=&quot;n&quot;&gt;remove_wait_queue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wait&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 将进程从等待队列中删除&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 若未找到则返回0&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;eventsig-&quot;&gt;&lt;code&gt;eventsig&lt;/code&gt; 系统调用&lt;/h4&gt;
+&lt;p&gt;定义&lt;code&gt;eventsig(int eventNum)&lt;/code&gt;，&lt;code&gt;eventsig()&lt;/code&gt;要完成的功能是唤醒所有等待该事件发生的进程。我们只需要在事件列表上找到该事件，然后调用&lt;code&gt;wake_up()&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/kernel/my_event.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;do_eventsig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;scheventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;wake_up&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;SYSCALL_DEFINE1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventsig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;do_eventsig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;eventclose-&quot;&gt;&lt;code&gt;eventclose&lt;/code&gt; 系统调用&lt;/h4&gt;
+
+&lt;p&gt;至于&lt;code&gt;eventclose()&lt;/code&gt;先在事件队列中找到该事件，然后根据事件在链表中的位置进行特定的处理，之后唤醒所有睡眠在该事件上的进程，最后将这个事件从链表中删除，释放内存。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/kernel/my_event.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;n&quot;&gt;SYSCALL_DEFINE1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventclose&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;releaseItem&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;do_eventsig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;before delete.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;print_event_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;releaseItem&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;scheventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;ready to delete: %d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;releaseItem&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lpmyevent_end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;lpmyevent_end&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;releaseItem&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+			&lt;span class=&quot;k&quot;&gt;goto&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;wake&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+		&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;releaseItem&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;nl&quot;&gt;wake&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;releaseItem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;kfree&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;releaseItem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+		&lt;span class=&quot;n&quot;&gt;print_event_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;after delete.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;can&amp;#39;t find : %d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;scheventnum-&quot;&gt;&lt;code&gt;scheventNum&lt;/code&gt; 函数&lt;/h4&gt;
+&lt;p&gt;找到事件编号对应的事件，返回其指针。若找不到则返回&lt;code&gt;NULL&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/kernel/my_event.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;scheventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+		&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;eventshow-printeventlist&quot;&gt;&lt;code&gt;eventshow&lt;/code&gt; 系统调用和&lt;code&gt;print_event_list&lt;/code&gt;&lt;/h4&gt;
+&lt;p&gt;实现了一个打印当前事件队列的系统调用。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/kernel/my_event.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_event_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;myevent_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;KERN_DEBUG&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;event_list: &amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot; %d&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventNum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;head&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;SYSCALL_DEFINE0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eventshow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;print_event_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lpmyevent_head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/5.3/code-1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;section-8&quot;&gt;3. 修改系统调用表&lt;/h3&gt;
+&lt;p&gt;在&lt;code&gt;/arch/x86/syscalls/syscall_64.tbl&lt;/code&gt;中加入如下内容&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/arch/x86/syscalls/syscall_64.tbl&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# my syscall
+
+320 common eventopen	sys_eventopen
+321 common eventclose	sys_eventclose
+322 common eventwait	sys_eventwait
+323 common eventsig		sys_eventsig
+324 common eventshow	sys_eventshow
+
+# my syscall end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/5.3/code-2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;makefile&quot;&gt;4. 修改内核编译Makefile&lt;/h3&gt;
+&lt;p&gt;在&lt;code&gt;/kernel/Makefile&lt;/code&gt;中找到&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/kernel/Makefile&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-makefile&quot; data-lang=&quot;makefile&quot;&gt;&lt;span class=&quot;nv&quot;&gt;obj-y&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; fork.o exec_domain.o panic.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    cpu.o exit.o itimer.o time.o softirq.o resource.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    extable.o params.o posix-timers.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    kthread.o sys_ni.o posix-cpu-timers.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    hrtimer.o nsproxy.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    notifier.o ksysfs.o cred.o reboot.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    async.o range.o groups.o smpboot.o&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;在末尾加入&lt;code&gt;my_event.o&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;/kernel/Makefile&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-makefile&quot; data-lang=&quot;makefile&quot;&gt;&lt;span class=&quot;nv&quot;&gt;obj-y&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; fork.o exec_domain.o panic.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    cpu.o exit.o itimer.o time.o softirq.o resource.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    extable.o params.o posix-timers.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    kthread.o sys_ni.o posix-cpu-timers.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    hrtimer.o nsproxy.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    notifier.o ksysfs.o cred.o reboot.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+	    async.o range.o groups.o smpboot.o my_event.o&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;section-9&quot;&gt;5. 编译内核&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;# make mrproper
+# make localconfig // 使用本地内核设置以减少编译时间
+# make -j4
+# make modules_install
+# make install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;section-10&quot;&gt;6. 测试&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-11&quot;&gt;测试程序代码&lt;/h4&gt;
+
+&lt;p&gt;&lt;strong&gt;open.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define EVENTOPEN 320&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;syscall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;EVENTOPEN&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;atoi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]));&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;open : %d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;close.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define EVENTCLOSE	321&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTWAIT	322&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTSIG	323&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;syscall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;EVENTCLOSE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;atoi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]));&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;close : %d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;wait.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define EVENTCLOSE	321&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTWAIT	322&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTSIG	323&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;syscall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;EVENTWAIT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;atoi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]));&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;wait : %d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;sig.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define EVENTCLOSE	321&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTWAIT	322&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTSIG	323&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;syscall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;EVENTSIG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;atoi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]));&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;%d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;test.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define EVENTCLOSE	321&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTWAIT	322&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTSIG	323&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define EVENTSHOW	324&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;syscall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;EVENTSHOW&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;以上5个程序分别调用了相应的系统调用，参数通过命令行参数传递。分别编译5个程序。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-12&quot;&gt;测试&lt;/h4&gt;
+&lt;p&gt;首先使用&lt;code&gt;open&lt;/code&gt;原语创建两个事件&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./open 0
+$ ./open 0
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;使用&lt;code&gt;eventshow&lt;/code&gt;系统调用查看当前事件队列&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./test
+$ dmesg
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/5.3/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/5.3/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;观察到事件2和4加入到了事件队列。&lt;/p&gt;
+
+&lt;p&gt;使用&lt;code&gt;wait&lt;/code&gt;原语使两个进程挂到事件2，在使用一次将一个进程挂到事件4&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./wait 2
+$ ./wait 2
+$ ./wait 4
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/5.3/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/5.3/3-1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;观察到进程进入休眠&lt;/p&gt;
+
+&lt;p&gt;使用&lt;code&gt;pgrep&lt;/code&gt;命令查询进程编号，再使用&lt;code&gt;top&lt;/code&gt;命令查看进程运行状态&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ pgrep wait
+$ top -p [pid1] -p [pid2]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/5.3/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;观察到进程运行状态为D，即&lt;code&gt;TASK_INTERRUPTIBLE&lt;/code&gt;`&lt;/p&gt;
+
+&lt;p&gt;使用&lt;code&gt;sig&lt;/code&gt;原语将事件2的进程唤醒&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./sig 2
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/5.3/5.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/5.3/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;观察到与进程2相关的两个进程运行结束。&lt;/p&gt;
+
+&lt;p&gt;使用close原语将事件4关闭，再使用&lt;code&gt;dmesg&lt;/code&gt;命令查看内核日志输出。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./close 4
+$ dmesg
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;发现与事件4对应的进程运行结束，事件列表中事件4已被移除。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/5.3/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/5.3/8.png&quot; alt=&quot;&quot; /&gt;	&lt;/p&gt;
+
+&lt;h2 id=&quot;section-13&quot;&gt;参考资料&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://jpkc.zju.edu.cn/k/505/pdf/nihe9.pdf&quot;&gt;内核实验9：设计一个同步机制&lt;/a&gt; - 浙江大学计算机学院&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.cs.swarthmore.edu/~newhall/cs45/s14/Labs/lab03.php&quot;&gt;CS45 Lab 3: Implementing a Synchronization Primative&lt;/a&gt; - Swarthmore College Computer Science Department&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://lxr.free-electrons.com/source/&quot;&gt;Linux Cross Reference&lt;/a&gt; - Free Electrons&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.cnblogs.com/parrynee/archive/2010/01/14/1648165.html&quot;&gt;睡眠–TASK_INTERRUPTIBLE and TASK_UNINTERRUPTIBLE&lt;/a&gt; - Parry Nee&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sat, 03 Jan 2015 03:00:00 +0800</pubDate>
+        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-5.3.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-5.3.html</guid>
+        
+        
+        <category>os_exp</category>
+        
+      </item>
+    
+      <item>
+        <title>虚拟存储器管理</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;1. 实验目的&lt;/h2&gt;
+&lt;p&gt;学习Linux虚拟存储实现机制；编写代码，测试虚拟存储系统的缺页错误（缺页中断）发生频率。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;2. 实验内容&lt;/h2&gt;
+&lt;p&gt;修改存储管理软件以便可以判断特定进程或者整个系统产生的缺页情况，达到以下目标&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;预置缺页频率参数&lt;/li&gt;
+  &lt;li&gt;报告当前缺页频率&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;3. 实验原理&lt;/h2&gt;
+&lt;p&gt;由于每发生一次却也都要进入缺页中断服务函数&lt;code&gt;do_page_fault&lt;/code&gt;一次，所以可以认为执行函数的次数就是系统发生缺页的次数。因此可以定义一个全局的变量&lt;code&gt;pfcount&lt;/code&gt;作为计数变量，在执行&lt;code&gt;do_page_fault&lt;/code&gt;时，该变量加1。系统经历的时间可以利用原有系统的变量&lt;code&gt;jiffies&lt;/code&gt;，这是一个系统计时器。在内核加载以后开始计时，以10ms为计时单位。&lt;/p&gt;
+
+&lt;p&gt;实现可采用2种方案&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;通过提供一个系统调用来访问内核变量&lt;code&gt;pfcount&lt;/code&gt;和&lt;code&gt;jiffies&lt;/code&gt;。但是增加系统变量存在诸多的不便，如重新编译内核等，而且容易出错以致系统崩溃。&lt;/li&gt;
+  &lt;li&gt;通过&lt;code&gt;/proc&lt;/code&gt;文件系统以模块的方式提供内核变量的访问接口。在&lt;code&gt;/proc/&lt;/code&gt;文件系统下建立文件&lt;code&gt;pfcount&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;section-3&quot;&gt;4. 实验过程及结果&lt;/h2&gt;
+
+&lt;h3 id=&quot;linux&quot;&gt;下载并解压Linux源代码&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;$ aria2c -c 
+# cp linux-3.16.tar.gz /usr/src
+# gzip -d linux-3.16.tar.gz
+# tar -xvf linux-3.16.tar
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;pfcount&quot;&gt;修改源码以导出系统变量&lt;code&gt;pfcount&lt;/code&gt;&lt;/h3&gt;
+&lt;p&gt;在&lt;code&gt;/include/linux/mm.h&lt;/code&gt;中增加变量声明&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;extern unsigned long volatile pfcount;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/4.3/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;在&lt;code&gt;/arch/x86/mm/fault.c&lt;/code&gt;中定义变量&lt;code&gt;pfcount&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;unsigned long volatile pfcount;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在同文件中的&lt;code&gt;do_page_fault&lt;/code&gt;函数中增加一行&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;pfcount++;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/4.3/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;同时在&lt;code&gt;/kernel/kallsyms.c&lt;/code&gt;中导出变量&lt;code&gt;jiffies&lt;/code&gt;和&lt;code&gt;pfcount&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;EXPORT_SYMBOL(jiffies);
+EXPORT_SYMBOL(pfcount);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;section-4&quot;&gt;编译内核&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;# make mrproper
+# make menuconfig
+# make -j4
+# make modules_install
+# make install
+# update-grub
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/4.3/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/4.3/4.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/4.3/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;section-5&quot;&gt;编写、编译和加载内核模块&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-6&quot;&gt;内核模块源码&lt;/h4&gt;
+&lt;p&gt;相应注释可参考实验2.3&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define _GNU_SOURCE&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define MODULE_NAME &amp;quot;pfcount&amp;quot;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/proc_fs.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/slab.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/mm.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/sched.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/string.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/types.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/ctype.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/kernel.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/version.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/seq_file.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/module.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define MODULE_VERSION &amp;quot;1.0&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// 添加extern声明以访问导出的符号&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;extern&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;volatile&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jiffies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pfcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;pfcount_proc_show&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;seq_file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;seq_printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;jiffies: %lu, pfcount: %lu&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jiffies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pfcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;pfcount showed.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;pfcount_proc_open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inode&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;single_open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pfcount_proc_show&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proc_dir_entry&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proc_pfcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file_operations&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pfcount_proc_fops&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;owner&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THIS_MODULE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;open&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pfcount_proc_open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;seq_read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;llseek&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;seq_lseek&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;release&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;single_release&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__init&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;init_pfcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;pfcount: init_module()&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;proc_pfcount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proc_create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;pfcount&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pfcount_proc_fops&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;KERN_INFO&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;%s %s has initialized.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MODULE_NAME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MODULE_VERSION&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__exit&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;cleanup_pfcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;pfcount: cleanup_pfcount()&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;remove_proc_entry&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;pfcount&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;KERN_INFO&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;%s %s has removed.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MODULE_NAME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MODULE_VERSION&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;module_init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;init_pfcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;module_exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cleanup_pfcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;makefile&quot;&gt;Makefile文件&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; Makefile
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-makefile&quot; data-lang=&quot;makefile&quot;&gt;&lt;span class=&quot;nv&quot;&gt;obj-m&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; pf.o
+&lt;span class=&quot;nv&quot;&gt;KERNEL_DIR&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; /lib/modules/&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;uname -r&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;/build
+&lt;span class=&quot;nv&quot;&gt;MODULEDIR&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;shell &lt;span class=&quot;nb&quot;&gt;pwd&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;nf&quot;&gt;modules&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+	make -C &lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;KERNEL_DIR&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;M&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;MODULEDIR&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt; modules&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;section-7&quot;&gt;编译内核模块&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;$ make
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/4.3/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;section-8&quot;&gt;加载内核文件&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code&gt;$ sudo insmod pf.ko
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;使用&lt;code&gt;dmesg&lt;/code&gt;查看内核模块加载情况&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ dmesg
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/4.3/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;观察到&lt;code&gt;pfcount&lt;/code&gt;模块已经加载。&lt;/p&gt;
+
+&lt;h4 id=&quot;proc&quot;&gt;查看在&lt;code&gt;/proc&lt;/code&gt;中生成文件&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;$ cat /proc/pfcount
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/4.3/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;section-9&quot;&gt;编写脚本计算缺页频率&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt; test.py
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;time&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;string&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;/proc/pfcount&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;r&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;readline&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;params&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;#39;,&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;jiffies&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;params&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;pfcount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;params&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;jiffies&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jiffies&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;:&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;pfcount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pfcount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;:&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jiffies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pfcount&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;total&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;orig_jiffies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;orig_pfcount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;getData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;jiffies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pfcount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;getData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+		&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pfcount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;orig_pfcount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jiffies&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;orig_jiffies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;total&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;page_fault per second: &amp;quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;{:.4f}&amp;quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;avg. val: {:.4f}&amp;quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;运行结果&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ python test.py
+page_fault per second: 2.8000
+page_fault per second: 3.4000
+page_fault per second: 3.3289
+page_fault per second: 3.0969
+page_fault per second: 3.1150
+page_fault per second: 2.9294
+page_fault per second: 3.8242
+page_fault per second: 3.5465
+page_fault per second: 3.5064
+page_fault per second: 3.3160
+avg. val: 3.2863
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/4.3/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;观察到每秒平均发生3.3次缺页中断。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-10&quot;&gt;卸载内核模块&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;$ sudo rmmod pf.ko
+&lt;/code&gt;&lt;/pre&gt;
+
+</description>
+        <pubDate>Sat, 03 Jan 2015 03:00:00 +0800</pubDate>
+        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-4.3.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-4.3.html</guid>
+        
+        
+        <category>os_exp</category>
+        
+      </item>
+    
+      <item>
+        <title>进程行为观察</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;1. 实验目的&lt;/h2&gt;
+&lt;p&gt;通过本实验了解并掌握Linux主要的进程管理命令&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;2. 实验内容&lt;/h2&gt;
+&lt;ol&gt;
+  &lt;li&gt;在Linux下，分别用&lt;code&gt;snice&lt;/code&gt;、&lt;code&gt;skill&lt;/code&gt;、&lt;code&gt;top&lt;/code&gt;等命令和&lt;code&gt;/proc&lt;/code&gt;中有关目录、文件观察系统中进程运行情况和CPU工作情况。&lt;/li&gt;
+  &lt;li&gt;在Linux下，用&lt;code&gt;ptrace()&lt;/code&gt;、&lt;code&gt;gdb&lt;/code&gt;跟踪一个进程运行情况，用&lt;code&gt;strace&lt;/code&gt;工具跟踪&lt;code&gt;fork()&lt;/code&gt;过程，用ltrace工具跟踪execl()过程。观察并分析跟踪信息。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;section-2&quot;&gt;3. 实验过程和结果&lt;/h2&gt;
+
+&lt;h3 id=&quot;snice--skill--top-&quot;&gt;snice \ skill \ top 命令&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-3&quot;&gt;简介&lt;/h4&gt;
+
+&lt;h5 id=&quot;snice&quot;&gt;&lt;code&gt;snice&lt;/code&gt;命令&lt;/h5&gt;
+
+&lt;pre&gt;&lt;code&gt;snice [new priority] [options] process selection criteria
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;用于调整某个进程的nice值（静态优先级），nice值的范围是-20~+19，值越大优先级越小。默认用户进程的nice值为20，使用&lt;code&gt;snice&lt;/code&gt;命令若不加参数默认为较初始值+4。&lt;/p&gt;
+
+&lt;h5 id=&quot;skill&quot;&gt;&lt;code&gt;skill&lt;/code&gt;命令&lt;/h5&gt;
+
+&lt;pre&gt;&lt;code&gt;skill [signal to send] [options] process selection criteria
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;用于向某个进程发送信号，默认发送TERM信号即终止信号。&lt;/p&gt;
+
+&lt;h5 id=&quot;top&quot;&gt;&lt;code&gt;top&lt;/code&gt;命令&lt;/h5&gt;
+
+&lt;pre&gt;&lt;code&gt;top -hv | -abcHimMsS -d delay -n iterations -p pid [, pid ...]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;显示系统的实时状态，包括系统的当前的基本状况、正在运行的任务，以及各个任务的信息，同时还提供了简单的交互方式来获取更详细的信息。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-4&quot;&gt;实验&lt;/h4&gt;
+&lt;p&gt;首先，编写了一个简单的程序&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;c1&quot;&gt;// snice-test.c&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;time.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;printTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;time_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tm&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_tm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;timep&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;p_tm&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;localtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;%d:%d:%d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_tm&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tm_hour&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_tm&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tm_min&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_tm&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tm_sec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[])&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;%s &amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 显示当前进程名&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 显示系统当前时间&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;	 &lt;span class=&quot;c1&quot;&gt;// 忙等待一段时间&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;同时运行两个该程序的实例&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./snice-test A
+$ ./snice-test B
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到两个进程中显示的信息交替出现，可以推测出两个进程得到CPU时间大致相同。执行&lt;code&gt;top&lt;/code&gt;命令，查看两个进程当前的优先级和CPU占用情况，&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ top
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;观察到两个进程目前的优先级均为20，CPU占用率大致相等。下面使用&lt;code&gt;snice&lt;/code&gt;命令降低A进程的优先级。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ snice +10 5344
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;观察到两个进程信息出现频率有了明显的差距，B进程显示信息的出现频率基本达到了A进程的10倍左右。再次执行&lt;code&gt;top&lt;/code&gt;命令。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ top
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;此时观察到A进程的优先级发生了变化，至30，其CPU占用率仅为9.3%。而B进程则达到了86.9%。说明优先级的变化确实影响了CPU对进程的调度。&lt;/p&gt;
+
+&lt;p&gt;执行&lt;code&gt;skill&lt;/code&gt;命令结束一个进程&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ skill 5344
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;再次使用&lt;code&gt;top&lt;/code&gt;命令发现A进程已经不再列表中，说明已经终止运行。&lt;/p&gt;
+
+&lt;h3 id=&quot;proc-&quot;&gt;&lt;code&gt;/proc&lt;/code&gt; 目录&lt;/h3&gt;
+
+&lt;p&gt;当一个用户进程运行时，在&lt;code&gt;/proc&lt;/code&gt;目录下会建立以进程号命名的目录，以及在该目录下的一系列与该进程有关存有相应信息的文件和文件夹。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;fd&lt;/code&gt; 目录中显示的是进程打开的文件链接。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;status&lt;/code&gt; 文件中现实的是进程的基本信息。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;cwd&lt;/code&gt; 是进程对应程序所在文件夹的软连接&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/9.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;其他文件和文件夹的内容参考 &lt;code&gt;man 5 proc&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;ptrace&quot;&gt;&lt;code&gt;ptrace()&lt;/code&gt;函数&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-5&quot;&gt;简介&lt;/h4&gt;
+&lt;p&gt;系统调用&lt;code&gt;ptrace()&lt;/code&gt;可用于观察和控制其他进程的执行情况、查看和修改被跟踪进程运行时的寄存器和内存。主要用于实现断点Debug和系统调用跟踪。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;long ptrace(enum __ptrace_request request, pid_t pid, void *addr, void *data);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;第一个参数为PTRACE请求类型的编号，第二个参数为被跟踪进程的PID，第三个和第四个分别传入地址和数据，根据请求类型的不同有不同的使用方法。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-6&quot;&gt;实验&lt;/h4&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Linux系统调用的参数通过寄存器来传递，对于x86-64架构，系统调用号存入&lt;code&gt;rax&lt;/code&gt;寄存器中，参数依次存入&lt;code&gt;rdi&lt;/code&gt;，&lt;code&gt;rsi&lt;/code&gt;，&lt;code&gt;rdx&lt;/code&gt;，&lt;code&gt;rcx&lt;/code&gt;，&lt;code&gt;r8&lt;/code&gt;，&lt;code&gt;r9&lt;/code&gt;寄存器中。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Linux 的系统调用编号存储在 &lt;code&gt;sys/syscall.h&lt;/code&gt; 头文件中。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;write 系统调用共有三个参数，第一个为文件描述符，第二个为写入字符串的头指针，第三个为写入字符串的长度。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;编写了下面一段程序&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;c1&quot;&gt;// ptrace-test.c&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;string.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/ptrace.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/types.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/wait.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/syscall.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/user.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define WORD_SIZE (sizeof(long))&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;union&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;word&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;chars&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;WORD_SIZE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt; 
+&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;union&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;word&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WORD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// WORD 类型用于获取从被跟踪进程中取出的1个字大小的内存数据&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;begin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;cm&quot;&gt;/* 一次拷贝一个字的数据 */&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WORD_SIZE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;w&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;val&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ptrace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PTRACE_PEEKDATA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;begin&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WORD_SIZE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;memcpy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;w&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;chars&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WORD_SIZE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;pos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WORD_SIZE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+		&lt;span class=&quot;cm&quot;&gt;/* 拷贝数据结尾不足一个字的数据 */&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WORD_SIZE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;w&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;val&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ptrace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PTRACE_PEEKDATA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;begin&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WORD_SIZE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;memcpy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;w&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;chars&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;sc&quot;&gt;&amp;#39;\0&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;pid_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 子进程编号&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;user_regs_struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+	&lt;span class=&quot;n&quot;&gt;child&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fork&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 创建子进程&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;status&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;insyscall&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;begin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;str&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;WORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;w&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;child&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;ptrace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PTRACE_TRACEME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 接受跟踪请求&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;execl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;/bin/ls&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ls&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 执行 ls 命令&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;c1&quot;&gt;// 等待子进程进行系统调用或结束&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;wait&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+			
+			&lt;span class=&quot;c1&quot;&gt;// 如果进程处于结束状态则跳出循环&lt;/span&gt;
+			&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;WIFEXITED&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+				&lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+			&lt;span class=&quot;c1&quot;&gt;// 查询此时的寄存器的值&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;ptrace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PTRACE_GETREGS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+			&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;insyscall&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 如果当前是进入系统调用&lt;/span&gt;
+				&lt;span class=&quot;n&quot;&gt;insyscall&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+				&lt;span class=&quot;c1&quot;&gt;// 打印寄存器的值&lt;/span&gt;
+				&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;syscall: no.%llu params %llu, %llu, %llu&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+					&lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;orig_rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+				&lt;span class=&quot;c1&quot;&gt;// 如果是 write 系统调用&lt;/span&gt;
+				&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;orig_rax&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SYS_write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+					&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;------&amp;gt;write syscall&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+					&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+					&lt;span class=&quot;n&quot;&gt;begin&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+					&lt;span class=&quot;n&quot;&gt;str&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;malloc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;sizeof&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+					&lt;span class=&quot;cm&quot;&gt;/* 拷贝出被跟踪进程输出字符串的内存数据 */&lt;/span&gt;
+					&lt;span class=&quot;n&quot;&gt;getData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;begin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+					&lt;span class=&quot;cm&quot;&gt;/* 将字符串打印出来 */&lt;/span&gt;
+					&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;------&amp;gt;write : &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;%s &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+				&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+			&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+				&lt;span class=&quot;c1&quot;&gt;// 输出系统调用的返回值&lt;/span&gt;
+				&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;syscall: returns %lld&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+				&lt;span class=&quot;n&quot;&gt;insyscall&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+			&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+			
+			&lt;span class=&quot;n&quot;&gt;ptrace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PTRACE_SYSCALL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+		
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;该程序创建了一个子进程，子进程执行&lt;code&gt;ls&lt;/code&gt;命令，父进程使用&lt;code&gt;ptrace()&lt;/code&gt;跟踪字进程执行。子进程每次进行系统调用，内核将控制权交给父进程，父进程调用ptrace()查看子进程当前寄存器的值，以获取当前系统调用的编号、参数和返回值，若是系统调用&lt;code&gt;write&lt;/code&gt;，则使用&lt;code&gt;PTRACE_PEEKDATA&lt;/code&gt;请求将子进程所在内存空间中要写入的字符串的内存数据拷贝至父进程的内存空间中，并输出字符串。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-7&quot;&gt;实验结果&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/3.1/10.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;通过输出结果可以看出，打印出了子进程每次进行系统调用的系统调用号，参数列表和返回值，&lt;code&gt;PTRACE_GETREGS&lt;/code&gt;请求被成功处理。看到父进程打印的结果与子进程一致，子进程的内存数据被成功拷贝到父进程中。&lt;/p&gt;
+
+&lt;h3 id=&quot;straceltrace&quot;&gt;&lt;code&gt;strace&lt;/code&gt;和&lt;code&gt;ltrace&lt;/code&gt;命令&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-8&quot;&gt;简介&lt;/h4&gt;
+
+&lt;h5 id=&quot;strace&quot;&gt;&lt;code&gt;strace&lt;/code&gt;命令&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;strace&lt;/code&gt;命令用于中断和记录进程所进行的系统调用过程，包括系统调用类型、参数及返回值。&lt;/p&gt;
+
+&lt;h5 id=&quot;ltrace&quot;&gt;&lt;code&gt;ltrace&lt;/code&gt;命令&lt;/h5&gt;
+&lt;p&gt;&lt;code&gt;ltrace&lt;/code&gt;命令用于中断和记录进程的动态库调用过程，也可以中断和显示由该程序发起的系统调用（默认不显示）。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-9&quot;&gt;实验及结果&lt;/h4&gt;
+
+&lt;p&gt;编写了如下程序&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;c1&quot;&gt;// trace.c&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;string.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/ptrace.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/types.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/wait.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/syscall.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/user.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define WORD_SIZE (sizeof(long))&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;union&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;word&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;long&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;chars&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;WORD_SIZE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;union&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;word&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WORD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;pid_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;user_regs_struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;regs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;child&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fork&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;child&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;execl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;/bin/ls&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;ls&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;child pid : %u&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;child&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;wait&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;child process returned.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+		
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;该程序创建了一个子进程，子进程执行&lt;code&gt;ls&lt;/code&gt;命令，父进程打印子进程的PID，待子进程结束输出提示信息。&lt;/p&gt;
+
+&lt;p&gt;执行结果&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ./trace
+child pid : 3823
+gdb        gram4.txt          ptrace    snice.c            syntax
+gdb.c      gramm2.txt         ptrace.c  snice-test         syntax.cpp
+gdb.txt    grammar.txt        sizeof    strace_return.txt  trace
+gram3.txt  ltrace_return.txt  sizeof.c  strace.txt         trace.c
+child process returned.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;使用&lt;code&gt;strace&lt;/code&gt;命令跟踪程序&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ strace ./trace
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出结果&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;	execve(&quot;./trace&quot;, [&quot;./trace&quot;], [/* 68 vars */]) = 0
+	brk(0)                                  = 0x11ce000
+	access(&quot;/etc/ld.so.nohwcap&quot;, F_OK)      = -1 ENOENT (No such file or directory)
+	mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fdb76961000
+	access(&quot;/etc/ld.so.preload&quot;, R_OK)      = -1 ENOENT (No such file or directory)
+	open(&quot;/etc/ld.so.cache&quot;, O_RDONLY|O_CLOEXEC) = 3
+	fstat(3, {st_mode=S_IFREG|0644, st_size=118840, ...}) = 0
+	mmap(NULL, 118840, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fdb76943000
+	close(3)                                = 0
+	access(&quot;/etc/ld.so.nohwcap&quot;, F_OK)      = -1 ENOENT (No such file or directory)
+	open(&quot;/lib/x86_64-linux-gnu/libc.so.6&quot;, O_RDONLY|O_CLOEXEC) = 3
+	read(3, &quot;\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0&amp;gt;\0\1\0\0\0\360\36\2\0\0\0\0\0&quot;..., 832) = 832
+	fstat(3, {st_mode=S_IFREG|0755, st_size=1853400, ...}) = 0
+	mmap(NULL, 3961912, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fdb76379000
+	mprotect(0x7fdb76536000, 2097152, PROT_NONE) = 0
+	mmap(0x7fdb76736000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1bd000) = 0x7fdb76736000
+	mmap(0x7fdb7673c000, 17464, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fdb7673c000
+	close(3)                                = 0
+	mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fdb76942000
+	mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fdb76940000
+	arch_prctl(ARCH_SET_FS, 0x7fdb76940740) = 0
+	mprotect(0x7fdb76736000, 16384, PROT_READ) = 0
+	mprotect(0x600000, 4096, PROT_READ)     = 0
+	mprotect(0x7fdb76963000, 4096, PROT_READ) = 0
+	munmap(0x7fdb76943000, 118840)          = 0
+--&amp;gt;	clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x7fdb76940a10) = 3823
+	fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 0), ...}) = 0
+	mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fdb76960000
+	write(1, &quot;child pid : 3823\n&quot;, 17)      = 17
+	wait4(-1, NULL, 0, NULL)                = 3823
+	--- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=3823, si_status=0, si_utime=0, si_stime=0} ---
+	write(1, &quot;child process returned.\n&quot;, 24) = 24
+	exit_group(0)                           = ?
+	+++ exited with 0 +++
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;此时无法找到&lt;code&gt;fork&lt;/code&gt;系统调用，在&lt;code&gt;man 2 fork&lt;/code&gt;中找到如下解释&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Since version 2.3.3, rather than invoking the kernel’s fork() system call, the glibc fork() wrapper that is provided as part of the NPTL threading implementation invokes clone(2) with flags that provide the same effect as the traditional system call.  (A call to fork() is equivalent to a call to clone(2) specifying flags as just SIGCHLD.) The glibc wrapper invokes any fork handlers that have been established using pthread_atfork(3).&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;说明其实调用glibc中的&lt;code&gt;fork()&lt;/code&gt;函数其实就是在调用flags参数为&lt;code&gt;SIGCHLD&lt;/code&gt;的&lt;code&gt;clone()&lt;/code&gt;函数，即调用系统调用&lt;code&gt;clone&lt;/code&gt;。可以看到输出结果中标记的一行为&lt;code&gt;clone&lt;/code&gt;系统调用的记录，返回值为子进程PID。&lt;/p&gt;
+
+&lt;p&gt;使用&lt;code&gt;ltrace&lt;/code&gt;命令跟踪程序中的&lt;code&gt;execl()&lt;/code&gt;函数&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ltrace -f -e execl ./trace
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;输出结果&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;child pid : 5214
+[pid 5214] execl(0x400767, 0x400764, 0, -1, 0 &amp;lt;unfinished ...&amp;gt;
+[pid 5214] --- Called exec() ---
+gdb	   gram4.txt	      ptrace	snice.c		   syntax
+gdb.c	   gramm2.txt	      ptrace.c	snice-test	   syntax.cpp
+gdb.txt    grammar.txt	      sizeof	strace_return.txt  trace
+gram3.txt  ltrace_return.txt  sizeof.c	strace.txt	   trace.c
+[pid 5214] +++ exited (status 0) +++
+[pid 5213] --- SIGCHLD (Child exited) ---
+child process returned.
+[pid 5213] +++ exited (status 0) +++
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;看到ltrace跟踪到了程序中的动态库中&lt;code&gt;execl()&lt;/code&gt;函数调用。&lt;/p&gt;
+
+&lt;h4 id=&quot;gdb&quot;&gt;&lt;code&gt;gdb&lt;/code&gt;的使用&lt;/h4&gt;
+
+&lt;p&gt;编写了如下简单的计算斐波那契数的程序，使用&lt;code&gt;gdb&lt;/code&gt;命令来跟踪和调试程序。&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;func&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;func&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;func&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;%d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;func&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;开始跟踪&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ gdb ./gdb
+
+GNU gdb (GDB) 7.6.1-ubuntu
+Copyright (C) 2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later &amp;lt;http://gnu.org/licenses/gpl.html&amp;gt;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type &quot;show copying&quot;
+and &quot;show warranty&quot; for details.
+This GDB was configured as &quot;x86_64-linux-gnu&quot;.
+For bug reporting instructions, please see:
+&amp;lt;http://www.gnu.org/software/gdb/bugs/&amp;gt;...
+Reading symbols from /home/edward/programs/gdb...done.
+(gdb) l 0 // 列出前10行代码
+1	#include &amp;lt;stdio.h&amp;gt;
+2	
+3	int func(int n)
+4	{
+5		if (n &amp;lt; 1) {
+6			return 0;
+7		}
+8		if (n == 1 || n == 2) {
+9			return 1;
+10		}
+(gdb) break 3 // 在第3行设置断点
+Breakpoint 1 at 0x400539: file gdb.c, line 3.
+(gdb) r // 开始运行程序
+Starting program: /home/edward/programs/./gdb 
+
+Breakpoint 1, func (n=5) at gdb.c:5 // 在断点处中断
+5		if (n &amp;lt; 1) {    
+(gdb) disassemble func // 输出反汇编程序
+Dump of assembler code for function func:
+   0x000000000040052d &amp;lt;+0&amp;gt;:	push   %rbp
+   0x000000000040052e &amp;lt;+1&amp;gt;:	mov    %rsp,%rbp
+   0x0000000000400531 &amp;lt;+4&amp;gt;:	push   %rbx
+   0x0000000000400532 &amp;lt;+5&amp;gt;:	sub    $0x18,%rsp
+   0x0000000000400536 &amp;lt;+9&amp;gt;:	mov    %edi,-0x14(%rbp)
+=&amp;gt; 0x0000000000400539 &amp;lt;+12&amp;gt;:	cmpl   $0x0,-0x14(%rbp)
+   0x000000000040053d &amp;lt;+16&amp;gt;:	jg     0x400546 &amp;lt;func+25&amp;gt;
+   0x000000000040053f &amp;lt;+18&amp;gt;:	mov    $0x0,%eax
+   0x0000000000400544 &amp;lt;+23&amp;gt;:	jmp    0x400577 &amp;lt;func+74&amp;gt;
+   0x0000000000400546 &amp;lt;+25&amp;gt;:	cmpl   $0x1,-0x14(%rbp)
+   0x000000000040054a &amp;lt;+29&amp;gt;:	je     0x400552 &amp;lt;func+37&amp;gt;
+   0x000000000040054c &amp;lt;+31&amp;gt;:	cmpl   $0x2,-0x14(%rbp)
+   0x0000000000400550 &amp;lt;+35&amp;gt;:	jne    0x400559 &amp;lt;func+44&amp;gt;
+   0x0000000000400552 &amp;lt;+37&amp;gt;:	mov    $0x1,%eax
+   0x0000000000400557 &amp;lt;+42&amp;gt;:	jmp    0x400577 &amp;lt;func+74&amp;gt;
+   0x0000000000400559 &amp;lt;+44&amp;gt;:	mov    -0x14(%rbp),%eax
+   0x000000000040055c &amp;lt;+47&amp;gt;:	sub    $0x1,%eax
+   0x000000000040055f &amp;lt;+50&amp;gt;:	mov    %eax,%edi
+   0x0000000000400561 &amp;lt;+52&amp;gt;:	callq  0x40052d &amp;lt;func&amp;gt;
+   0x0000000000400566 &amp;lt;+57&amp;gt;:	mov    %eax,%ebx
+   0x0000000000400568 &amp;lt;+59&amp;gt;:	mov    -0x14(%rbp),%eax
+   0x000000000040056b &amp;lt;+62&amp;gt;:	sub    $0x2,%eax
+---Type &amp;lt;return&amp;gt; to continue, or q &amp;lt;return&amp;gt; to quit---q
+Quit
+(gdb) print n // 打印局部变量n的值
+$1 = 5
+(gdb) n // 单步运行
+8		if (n == 1 || n == 2) {
+(gdb) n
+11		return func(n - 1) + func(n - 2);
+(gdb) n
+
+Breakpoint 1, func (n=4) at gdb.c:5
+5		if (n &amp;lt; 1) {
+(gdb) n
+8		if (n == 1 || n == 2) {
+(gdb) n
+11		return func(n - 1) + func(n - 2);
+(gdb) bt // 打印调用栈
+#0  func (n=4) at gdb.c:11
+#1  0x0000000000400566 in func (n=5) at gdb.c:11
+#2  0x000000000040058c in main () at gdb.c:16
+(gdb) n
+
+Breakpoint 1, func (n=3) at gdb.c:5
+5		if (n &amp;lt; 1) {
+(gdb) n
+8		if (n == 1 || n == 2) {
+(gdb) bt
+#0  func (n=3) at gdb.c:8
+#1  0x0000000000400566 in func (n=4) at gdb.c:11
+#2  0x0000000000400566 in func (n=5) at gdb.c:11
+#3  0x000000000040058c in main () at gdb.c:16
+(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) n
+Program not restarted.
+(gdb) info registers // 打印寄存器的值
+rax            0x3	3
+rbx            0x0	0
+rcx            0x40057e	4195710
+rdx            0x7fffffffdf48	140737488346952
+rsi            0x7fffffffdf38	140737488346936
+rdi            0x3	3
+rbp            0x7fffffffdde0	0x7fffffffdde0
+rsp            0x7fffffffddc0	0x7fffffffddc0
+r8             0x7ffff7dd4e80	140737351863936
+r9             0x7ffff7de9d40	140737351949632
+r10            0x7fffffffdcc0	140737488346304
+r11            0x7ffff7a33cf0	140737348058352
+r12            0x400440	4195392
+r13            0x7fffffffdf30	140737488346928
+r14            0x0	0
+r15            0x0	0
+rip            0x400546	0x400546 &amp;lt;func+25&amp;gt;
+eflags         0x206	[ PF IF ]
+cs             0x33	51
+ss             0x2b	43
+ds             0x0	0
+es             0x0	0
+fs             0x0	0
+---Type &amp;lt;return&amp;gt; to continue, or q &amp;lt;return&amp;gt; to quit---
+
+(gdb) clear // 清除所有断点
+已删除的断点 1 
+(gdb) c // 运行至程序结束
+Continuing.
+5
+[Inferior 1 (process 4001) exited with code 02]
+(gdb) quit
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;section-10&quot;&gt;参考文献&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;Wikipedia&lt;/li&gt;
+  &lt;li&gt;Linux Manual&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sat, 03 Jan 2015 02:53:00 +0800</pubDate>
+        <link>http://edward-zhu.github.io/os_exp/2015/01/03/exp-3.1.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/03/exp-3.1.html</guid>
+        
+        
+        <category>os_exp</category>
+        
+      </item>
+    
+      <item>
+        <title>系统调用</title>
+        <description>&lt;h3 id=&quot;section&quot;&gt;1. 实验目的&lt;/h3&gt;
+&lt;p&gt;向现有 Linux 内核加入一个新的系统调用从而在内核空间中实现对用户空间的读写。
+例如,设计并实现一个新的内核函数 &lt;code&gt;mycall()&lt;/code&gt;,此函数通过一个引用参数的调用返回 当前系统时间,功能上基本与&lt;code&gt;gettimeofday()&lt;/code&gt;相同。
+也可以实现具有其它功能的系统调用。
+###2. 实验内容与步骤
+####1. 获取 Linux 内核源代码&lt;/p&gt;
+
+&lt;p&gt;从 &lt;code&gt;http://www.kernel.org/&lt;/code&gt; 下载Linux最新内核源代码（当前为3.17.3）&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ aria2c -c https://www.kernel.org/pub/linux/kernel/v3.x/linux-3.17.3.tar.xz
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;拷贝至 &lt;code&gt;/usr/src&lt;/code&gt; 文件夹并解压&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# cp linux-3.17.3.tar.xz /usr/src
+# cd /usr/src
+# xz -d linux-3.17.3.tar.xz
+# tar -xvf linux-3.17.3.tar
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-1&quot;&gt;2. 添加新调用的源代码&lt;/h4&gt;
+
+&lt;p&gt;在 &lt;code&gt;kernel/sys.c&lt;/code&gt; 中添加相应的调用代码&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;n&quot;&gt;asmlinkage&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sys_mycall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timeval&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timeval&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ktv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	
+	&lt;span class=&quot;n&quot;&gt;do_gettimeofday&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ktv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;c1&quot;&gt;// 将内核空间的数据拷贝至用户空间&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;copy_to_user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ktv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;sizeof&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ktv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;EFAULT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;section-2&quot;&gt;3. 修改系统调用表&lt;/h4&gt;
+&lt;p&gt;在 &lt;code&gt;arch/x86/syscalls/syscall_64.tbl&lt;/code&gt; 中添加调用名和函数名&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;321	common	mycall	sys_mycall
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;四个参数分别代表：系统调用号、系统调用类型、系统调用名、调用函数&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h4 id=&quot;section-3&quot;&gt;4. 编译内核&lt;/h4&gt;
+&lt;p&gt;安装编译所需的工具&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ sudo apt-get install ncurses-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;编译&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# make mrproper
+# make menuconfig
+# make -j4
+# make modules_install
+# make install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-4&quot;&gt;5. 重建引导信息&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code&gt;$ sudo grub2_update
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-5&quot;&gt;6. 重启系统&lt;/h4&gt;
+
+&lt;pre&gt;&lt;code&gt;$ sudo reboot
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;编写程序测试&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;在&lt;strong&gt;2.6.18&lt;/strong&gt;版本之后的Linux内核中，&lt;code&gt;_syscall()&lt;/code&gt;宏被删除，应使用&lt;code&gt;syscall()&lt;/code&gt;函数。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;strong&gt;test.c&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/unistd.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/time.h&amp;gt; &lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#define	MYCALL	321&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timeval&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gettime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timeval&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mycalltime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	
+	&lt;span class=&quot;n&quot;&gt;gettimeofday&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gettime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;syscall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MYCALL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mycalltime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;gettimeofday:%lu %lu&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+				&lt;span class=&quot;n&quot;&gt;gettime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv_sec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gettime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv_usec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;mycall:%lu %lu&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+				&lt;span class=&quot;n&quot;&gt;mycalltime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv_sec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mycalltime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv_usec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;section-6&quot;&gt;3. 实验结果&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-7&quot;&gt;内核编译过程&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.4/1.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/2.4/2.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/2.4/3.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/2.4/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;编译成功，新增系统调用源代码被正确编译。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-8&quot;&gt;测试程序运行结果&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.4/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;返回结果正确，新增的系统调用被成功添加进内核中。&lt;/p&gt;
+</description>
+        <pubDate>Fri, 02 Jan 2015 21:53:00 +0800</pubDate>
+        <link>http://edward-zhu.github.io/os_exp/2015/01/02/exp-2.4.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/02/exp-2.4.html</guid>
+        
+        
+        <category>os_exp</category>
+        
+      </item>
+    
+      <item>
+        <title>内核模块</title>
+        <description>&lt;h3 id=&quot;section&quot;&gt;1. 实验目的&lt;/h3&gt;
+&lt;p&gt;模块是 Linux 系统的一种特有机制,可用以动态扩展操作系统内核功能。编写实现某些 特定功能的模块,将其作为内核的一部分在管态下运行。本实验通过内核模块编程在&lt;code&gt;/porc&lt;/code&gt;文件系统中实现系统时钟的读操作接口。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-1&quot;&gt;2. 实验内容&lt;/h3&gt;
+&lt;p&gt;设计并构建一个在&lt;code&gt;/proc&lt;/code&gt;文件系统中的内核模块&lt;code&gt;clock&lt;/code&gt;,支持&lt;code&gt;read()&lt;/code&gt;操作,&lt;code&gt;read()&lt;/code&gt;返回值为
+一个字符串,其中包块一个空各分开的两个子串,为别代表&lt;code&gt;xtime.tv_sec&lt;/code&gt;和&lt;code&gt;xtime.tv_usec&lt;/code&gt;。&lt;/p&gt;
+
+&lt;h3 id=&quot;section-2&quot;&gt;3. 实验原理&lt;/h3&gt;
+&lt;p&gt;Linux 模块是一些可以作为独立程序来编译的函数和数据类型的集合。在装载这些模块 式,将它的代码链接到内核中。Linux 模块可以在内核启动时装载,也可以在内核运行的过 程中装载。如果在模块装载之前就调用了动态模块的一个函数,那么这次调用将会失败。如 果这个模块已被加载,那么内核就可以使用系统调用,并将其传递到模块中的相应函数。
+###4. 实验步骤&lt;/p&gt;
+
+&lt;h4 id=&quot;section-3&quot;&gt;编写内核模块&lt;/h4&gt;
+
+&lt;p&gt;文件中主要包含四个函数：
+* &lt;code&gt;clock_proc_show()&lt;/code&gt;
+* &lt;code&gt;clock_proc_open()&lt;/code&gt;
+* &lt;code&gt;init_clock()&lt;/code&gt;
+* &lt;code&gt;cleanup_clock()&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中&lt;code&gt;init_clock()&lt;/code&gt;,&lt;code&gt;cleanup_clock()&lt;/code&gt;负责将模块从系统中加载或卸载,以及增加或删除模块在&lt;code&gt;/proc&lt;/code&gt;中的入口。&lt;code&gt;clock_proc_open()&lt;/code&gt;负责打开&lt;code&gt;/proc/clock&lt;/code&gt;文件，并通过&lt;code&gt;clock_proc_show()&lt;/code&gt;对文件进行读写操作。  &lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;在linux 3.0以上版本的内核中，实验参考书中使用的create_proc_read_entry()函数已经被标记为过时的函数，而应使用proc_create()来创建/proc文件系统模块。&lt;/em&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;makefile&quot;&gt;&lt;code&gt;Makefile&lt;/code&gt;文件&lt;/h4&gt;
+
+&lt;p&gt;在2.6版本以后的Linux内核中，考虑到内核源代码的依赖关系的复杂程度，Linux使用了新的KMAKE方式来编译内核模块。&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-makefile&quot; data-lang=&quot;makefile&quot;&gt;&lt;span class=&quot;nv&quot;&gt;obj-m&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; clock.o &lt;span class=&quot;c&quot;&gt;# 添加目标文件&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;KERNEL_DIR&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; /lib/modules/&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;uname -r&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;/build &lt;span class=&quot;c&quot;&gt;# 设置内核文件位置&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;MODULEDIR&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;shell &lt;span class=&quot;nb&quot;&gt;pwd&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# 设置生成的模块文件位置&lt;/span&gt;
+&lt;span class=&quot;nf&quot;&gt;modules&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+	make -C &lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;KERNEL_DIR&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;M&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;MODULEDIR&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt; modules &lt;span class=&quot;c&quot;&gt;# 使用KMAKE来生成模块&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;clockc&quot;&gt;内核模块源代码&lt;code&gt;clock.c&lt;/code&gt;&lt;/h4&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#define _GNU_SOURCE&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#define MODULE_NAME &amp;quot;clock&amp;quot;&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/kernel.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/module.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/proc_fs.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;linux/seq_file.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;clock_proc_show&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;seq_file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timeval&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;do_gettimeofday&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 获取系统时间&lt;/span&gt;
+	&lt;span class=&quot;c1&quot;&gt;// 将系统时间写入proc文件中&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;seq_printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;%lu, %lu&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv_sec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv_usec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;clock: read_func()&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;clock_proc_open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inode&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;c1&quot;&gt;// 使用single_open操作来打开顺序文件&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;single_open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock_proc_show&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proc_dir_entry&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proc_my_clock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// 文件操作结构体&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;file_operations&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock_proc_fops&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;owner&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;THIS_MODULE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;open&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock_proc_open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 使用clock_proc_open()方法来打开文件&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;seq_read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 使用seq_read()方法以顺序文件方式读取文件&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;llseek&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;seq_lseek&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;release&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;single_release&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__init&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;init_clock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;clock: init_module()&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;c1&quot;&gt;// 创建一个proc模块&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;proc_my_clock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;proc_create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;clock&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clock_proc_fops&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;KERN_INFO&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;%s %s has initialized.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;MODULE_NAME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;1.0&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__exit&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;cleanup_clock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;clock: cleanup_module()&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;remove_proc_entry&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;clock&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;printk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;KERN_INFO&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;%s %s has removed.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;MODULE_NAME&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;1.0&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// 设置初始化模块方法为init_clock()&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;module_init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;init_clock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// 设置卸载模块方法为cleanup_clock()&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;module_exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cleanup_clock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;编译代码
+		$ make&lt;/p&gt;
+
+&lt;h4 id=&quot;section-4&quot;&gt;加载内核模块&lt;/h4&gt;
+
+&lt;p&gt;在命令行下执行以下代码来加载内核模块&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ sudo insmod clock.ko
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-5&quot;&gt;测试&lt;/h4&gt;
+
+&lt;p&gt;gettime.c&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/time.h&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;fcntl.h&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timeval&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;getSystemTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;procClockTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+	&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;infile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;gettimeofday&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;getSystemTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;infile&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;/proc/clock&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;O_RDONLY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;len&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;infile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;procClockTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;infile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;procClockTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;sc&quot;&gt;&amp;#39;\0&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;SystemTime is %lu %lu&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;ProcClockTime is %s&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;getSystemTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv_sec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;getSystemTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tv_usec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+		&lt;span class=&quot;n&quot;&gt;procClockTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;n&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+	&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;section-6&quot;&gt;卸载内核模块&lt;/h4&gt;
+
+&lt;p&gt;在命令行下执行以下代码来卸载内核模块&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$ sudo insmod clock.o
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;section-7&quot;&gt;5. 实验结果及分析&lt;/h3&gt;
+&lt;p&gt;####编译内核模块&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.3/1.png&quot; alt=&quot;&quot; title=&quot;编译内核模块&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;section-8&quot;&gt;加载内核模块&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.3/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;dmesg&quot;&gt;通过&lt;code&gt;dmesg&lt;/code&gt;命令查看模块加载情况&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.3/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到模块输出的提示信息，说明模块已经被加载。&lt;/p&gt;
+
+&lt;h4 id=&quot;gettimec&quot;&gt;编译测试程序&lt;code&gt;gettime.c&lt;/code&gt;&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.3/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;gettimec-1&quot;&gt;执行测试程序&lt;code&gt;gettime.c&lt;/code&gt;&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.3/5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到测试程序正确获取到了内核模块提供的时间信息。&lt;/p&gt;
+
+&lt;h4 id=&quot;section-9&quot;&gt;卸载内核模块&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.3/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;dmesg-1&quot;&gt;通过&lt;code&gt;dmesg&lt;/code&gt;命令查看模块卸载情况&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/2.3/7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到模块输出的提示信息，&lt;code&gt;read_func()&lt;/code&gt;表示该模块被调用过一次，之后的提示信息表明模块已经被成功卸载。&lt;/p&gt;
+
+</description>
+        <pubDate>Fri, 02 Jan 2015 21:53:00 +0800</pubDate>
+        <link>http://edward-zhu.github.io/os_exp/2015/01/02/exp-2.3.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/02/exp-2.3.html</guid>
+        
+        
+        <category>os_exp</category>
+        
+      </item>
+    
+      <item>
+        <title>系统安装实验</title>
+        <description>&lt;h2 id=&quot;section&quot;&gt;1. 实验内容&lt;/h2&gt;
+&lt;p&gt;在配备Mac操作系统Host机上，安装虚拟机软件Parallel Desktop，对硬盘进行分区和格式化，安装ArchLinux操作系统，以便在一台机器上模拟出多种操作系统运行环境。&lt;/p&gt;
+
+&lt;h2 id=&quot;section-1&quot;&gt;2. 实验过程&lt;/h2&gt;
+
+&lt;h3 id=&quot;section-2&quot;&gt;实验环境&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-3&quot;&gt;宿主机&lt;/h4&gt;
+&lt;ul&gt;
+  &lt;li&gt;Intel Core i5 @ 2.5GHz&lt;/li&gt;
+  &lt;li&gt;OS X 10.10.1&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;section-4&quot;&gt;虚拟机&lt;/h4&gt;
+&lt;ul&gt;
+  &lt;li&gt;Parallel Desktop 9&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;linux&quot;&gt;Linux系统&lt;/h4&gt;
+&lt;ul&gt;
+  &lt;li&gt;ArchLinux (安装介质 2014.12.20)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;section-5&quot;&gt;过程&lt;/h3&gt;
+
+&lt;h4 id=&quot;section-6&quot;&gt;下载安装介质&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;aria2c -c http://mirror.bjtu.edu.cn/archlinux/iso/2014.12.01/archlinux-2014.12.01-dual.iso
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-7&quot;&gt;加载镜像&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/1.2/0.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;section-8&quot;&gt;启动虚拟机&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/1.2/1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;section-9&quot;&gt;磁盘分区&lt;/h4&gt;
+&lt;p&gt;共分3个区：&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;类型&lt;/th&gt;
+      &lt;th&gt;大小&lt;/th&gt;
+      &lt;th&gt;挂载点&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;ext4&lt;/td&gt;
+      &lt;td&gt;4GB&lt;/td&gt;
+      &lt;td&gt;/&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;ext4&lt;/td&gt;
+      &lt;td&gt;5GB&lt;/td&gt;
+      &lt;td&gt;/home&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;swap&lt;/td&gt;
+      &lt;td&gt;1GB&lt;/td&gt;
+      &lt;td&gt;-&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;使用&lt;code&gt;cfdisk&lt;/code&gt;程序进行分区&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# cfdisk
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/1.2/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;格式化分区&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# mkfs.ext4 /dev/sda1
+# mkfs.ext4 /dev/sda2
+# mkswap /dev/sda3
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/1.2/3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;section-10&quot;&gt;挂载分区&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;# mount /dev/sda1 /mnt
+# mkdir /mnt/home
+# monut /dev/sda2 /mnt/home
+# swapon /dev/sda3
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/1.2/4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;section-11&quot;&gt;下载系统基础环境包&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;# pacstrap /mnt base base-devel ![](/images/1.2/5.png)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;fstab&quot;&gt;生成fstab表&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;# genfstab -p /mnt &amp;gt;&amp;gt; /mnt/etc/fstab
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-12&quot;&gt;切换根目录至新系统&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;# arch-chroot /mnt ![](/images/1.2/6.png)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-13&quot;&gt;初始设置&lt;/h4&gt;
+&lt;p&gt;设置主机名&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# echo edward-arch &amp;gt; /etc/hostname
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;设置时区&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# ln -sf /usr/share/zoneinfo/Asia/Macau /etc/localtime
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在&lt;code&gt;/etc/locale.gen&lt;/code&gt;中反注释需要的locales，然后运行命令生成locales&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# locale-gen
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;设置locale偏好&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# echo LANG=en_US.UTF-8
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;创建初始RAM disk&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# mkinitcpio -p linux
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;创建root密码&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# passwd
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-14&quot;&gt;安装引导器&lt;/h4&gt;
+
+&lt;p&gt;下载并安装&lt;code&gt;grub&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# pacman -S grub
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;安装&lt;code&gt;grub&lt;/code&gt;至硬盘&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# grub-install --recheck /dev/sda
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;创建配置文件&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# grub-mkconfig -o /boot/grub/grub.cfg
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-15&quot;&gt;重启至新系统&lt;/h4&gt;
+&lt;p&gt;返回安装环境&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# exit
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;重新启动&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# reboot
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h4 id=&quot;section-16&quot;&gt;安装完成~&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;/images/1.2/7.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/images/1.2/8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+</description>
+        <pubDate>Fri, 02 Jan 2015 21:30:16 +0800</pubDate>
+        <link>http://edward-zhu.github.io/os_exp/2015/01/02/exp-1.2.html</link>
+        <guid isPermaLink="true">http://edward-zhu.github.io/os_exp/2015/01/02/exp-1.2.html</guid>
+        
+        
+        <category>os_exp</category>
+        
+      </item>
+    
   </channel>
 </rss>

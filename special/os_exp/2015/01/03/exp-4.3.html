@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>虚拟存储器管理</title>
+  <meta name="description" content="1. 实验目的学习Linux虚拟存储实现机制；编写代码，测试虚拟存储系统的缺页错误（缺页中断）发生频率。">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://edward-zhu.github.io/os_exp/2015/01/03/exp-4.3.html">
+  <link rel="alternate" type="application/rss+xml" title="又一个临时的博客" href="http://edward-zhu.github.io/feed.xml" />
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">又一个临时的博客</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">虚拟存储器管理</h1>
+    <p class="post-meta">Jan 3, 2015</p>
+  </header>
+
+  <article class="post-content">
+    <h2 id="section">1. 实验目的</h2>
+<p>学习Linux虚拟存储实现机制；编写代码，测试虚拟存储系统的缺页错误（缺页中断）发生频率。</p>
+
+<h2 id="section-1">2. 实验内容</h2>
+<p>修改存储管理软件以便可以判断特定进程或者整个系统产生的缺页情况，达到以下目标</p>
+
+<ul>
+  <li>预置缺页频率参数</li>
+  <li>报告当前缺页频率</li>
+</ul>
+
+<h2 id="section-2">3. 实验原理</h2>
+<p>由于每发生一次却也都要进入缺页中断服务函数<code>do_page_fault</code>一次，所以可以认为执行函数的次数就是系统发生缺页的次数。因此可以定义一个全局的变量<code>pfcount</code>作为计数变量，在执行<code>do_page_fault</code>时，该变量加1。系统经历的时间可以利用原有系统的变量<code>jiffies</code>，这是一个系统计时器。在内核加载以后开始计时，以10ms为计时单位。</p>
+
+<p>实现可采用2种方案</p>
+
+<ol>
+  <li>通过提供一个系统调用来访问内核变量<code>pfcount</code>和<code>jiffies</code>。但是增加系统变量存在诸多的不便，如重新编译内核等，而且容易出错以致系统崩溃。</li>
+  <li>通过<code>/proc</code>文件系统以模块的方式提供内核变量的访问接口。在<code>/proc/</code>文件系统下建立文件<code>pfcount</code></li>
+</ol>
+
+<h2 id="section-3">4. 实验过程及结果</h2>
+
+<h3 id="linux">下载并解压Linux源代码</h3>
+
+<pre><code>$ aria2c -c 
+# cp linux-3.16.tar.gz /usr/src
+# gzip -d linux-3.16.tar.gz
+# tar -xvf linux-3.16.tar
+</code></pre>
+
+<h3 id="pfcount">修改源码以导出系统变量<code>pfcount</code></h3>
+<p>在<code>/include/linux/mm.h</code>中增加变量声明</p>
+
+<pre><code>extern unsigned long volatile pfcount;
+</code></pre>
+
+<p><img src="/images/4.3/1.png" alt="" /></p>
+
+<p>在<code>/arch/x86/mm/fault.c</code>中定义变量<code>pfcount</code></p>
+
+<pre><code>unsigned long volatile pfcount;
+</code></pre>
+
+<p>在同文件中的<code>do_page_fault</code>函数中增加一行</p>
+
+<pre><code>pfcount++;
+</code></pre>
+
+<p><img src="/images/4.3/2.png" alt="" /></p>
+
+<p>同时在<code>/kernel/kallsyms.c</code>中导出变量<code>jiffies</code>和<code>pfcount</code></p>
+
+<pre><code>EXPORT_SYMBOL(jiffies);
+EXPORT_SYMBOL(pfcount);
+</code></pre>
+
+<h3 id="section-4">编译内核</h3>
+
+<pre><code># make mrproper
+# make menuconfig
+# make -j4
+# make modules_install
+# make install
+# update-grub
+</code></pre>
+
+<p><img src="/images/4.3/3.png" alt="" />
+<img src="/images/4.3/4.png" alt="" />
+<img src="/images/4.3/5.png" alt="" /></p>
+
+<h3 id="section-5">编写、编译和加载内核模块</h3>
+
+<h4 id="section-6">内核模块源码</h4>
+<p>相应注释可参考实验2.3</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">&gt;</span> <span class="n">pf</span><span class="p">.</span><span class="n">c</span>
+
+<span class="cp">#define _GNU_SOURCE</span>
+<span class="cp">#define MODULE_NAME &quot;pfcount&quot;</span>
+
+<span class="cp">#include &lt;linux/proc_fs.h&gt;</span>
+<span class="cp">#include &lt;linux/slab.h&gt;</span>
+<span class="cp">#include &lt;linux/mm.h&gt;</span>
+<span class="cp">#include &lt;linux/sched.h&gt;</span>
+<span class="cp">#include &lt;linux/string.h&gt;</span>
+<span class="cp">#include &lt;linux/types.h&gt;</span>
+<span class="cp">#include &lt;linux/ctype.h&gt;</span>
+<span class="cp">#include &lt;linux/kernel.h&gt;</span>
+<span class="cp">#include &lt;linux/version.h&gt;</span>
+<span class="cp">#include &lt;linux/seq_file.h&gt;</span>
+<span class="cp">#include &lt;linux/module.h&gt;</span>
+
+<span class="cp">#define MODULE_VERSION &quot;1.0&quot;</span>
+<span class="c1">// 添加extern声明以访问导出的符号</span>
+<span class="k">extern</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="k">volatile</span> <span class="n">jiffies</span><span class="p">,</span> <span class="n">pfcount</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">pfcount_proc_show</span><span class="p">(</span><span class="k">struct</span> <span class="n">seq_file</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">seq_printf</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="s">&quot;jiffies: %lu, pfcount: %lu</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">jiffies</span><span class="p">,</span> <span class="n">pfcount</span><span class="p">);</span>
+	<span class="n">printk</span><span class="p">(</span><span class="s">&quot;pfcount showed.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">pfcount_proc_open</span><span class="p">(</span><span class="k">struct</span> <span class="n">inode</span> <span class="o">*</span> <span class="n">inode</span><span class="p">,</span> <span class="k">struct</span> <span class="n">file</span> <span class="o">*</span> <span class="n">file</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="n">single_open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">pfcount_proc_show</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">struct</span> <span class="n">proc_dir_entry</span> <span class="o">*</span> <span class="n">proc_pfcount</span><span class="p">;</span>
+
+<span class="k">const</span> <span class="k">struct</span> <span class="n">file_operations</span> <span class="n">pfcount_proc_fops</span> <span class="o">=</span> <span class="p">{</span>
+	<span class="p">.</span><span class="n">owner</span> <span class="o">=</span> <span class="n">THIS_MODULE</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">open</span> <span class="o">=</span> <span class="n">pfcount_proc_open</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">seq_read</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">llseek</span> <span class="o">=</span> <span class="n">seq_lseek</span><span class="p">,</span>
+	<span class="p">.</span><span class="n">release</span> <span class="o">=</span> <span class="n">single_release</span><span class="p">,</span>
+<span class="p">};</span>
+
+<span class="kt">int</span> <span class="n">__init</span> <span class="nf">init_pfcount</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">printk</span><span class="p">(</span><span class="s">&quot;pfcount: init_module()</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+	<span class="n">proc_pfcount</span> <span class="o">=</span> <span class="n">proc_create</span><span class="p">(</span><span class="s">&quot;pfcount&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pfcount_proc_fops</span><span class="p">);</span>
+	<span class="n">printk</span><span class="p">(</span><span class="n">KERN_INFO</span><span class="s">&quot;%s %s has initialized.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">MODULE_NAME</span><span class="p">,</span> <span class="n">MODULE_VERSION</span><span class="p">);</span>
+
+	<span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">__exit</span> <span class="nf">cleanup_pfcount</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+	<span class="n">printk</span><span class="p">(</span><span class="s">&quot;pfcount: cleanup_pfcount()</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+	<span class="n">remove_proc_entry</span><span class="p">(</span><span class="s">&quot;pfcount&quot;</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+	<span class="n">printk</span><span class="p">(</span><span class="n">KERN_INFO</span><span class="s">&quot;%s %s has removed.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">MODULE_NAME</span><span class="p">,</span> <span class="n">MODULE_VERSION</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">module_init</span><span class="p">(</span><span class="n">init_pfcount</span><span class="p">);</span>
+
+<span class="n">module_exit</span><span class="p">(</span><span class="n">cleanup_pfcount</span><span class="p">);</span></code></pre></div>
+
+<h4 id="makefile">Makefile文件</h4>
+
+<pre><code>&gt; Makefile
+</code></pre>
+
+<div class="highlight"><pre><code class="language-makefile" data-lang="makefile"><span class="nv">obj-m</span> <span class="o">+=</span> pf.o
+<span class="nv">KERNEL_DIR</span> <span class="o">:=</span> /lib/modules/<span class="sb">`</span>uname -r<span class="sb">`</span>/build
+<span class="nv">MODULEDIR</span> <span class="o">:=</span> <span class="k">$(</span>shell <span class="nb">pwd</span><span class="k">)</span>
+
+<span class="nf">modules</span><span class="o">:</span>
+	make -C <span class="k">$(</span>KERNEL_DIR<span class="k">)</span> <span class="nv">M</span><span class="o">=</span><span class="k">$(</span>MODULEDIR<span class="k">)</span> modules</code></pre></div>
+
+<h4 id="section-7">编译内核模块</h4>
+<pre><code>$ make
+</code></pre>
+
+<p><img src="/images/4.3/6.png" alt="" /></p>
+
+<h4 id="section-8">加载内核文件</h4>
+
+<pre><code>$ sudo insmod pf.ko
+</code></pre>
+
+<p>使用<code>dmesg</code>查看内核模块加载情况</p>
+
+<pre><code>$ dmesg
+</code></pre>
+
+<p><img src="/images/4.3/7.png" alt="" /></p>
+
+<p>观察到<code>pfcount</code>模块已经加载。</p>
+
+<h4 id="proc">查看在<code>/proc</code>中生成文件</h4>
+<pre><code>$ cat /proc/pfcount
+</code></pre>
+
+<p><img src="/images/4.3/8.png" alt="" /></p>
+
+<h4 id="section-9">编写脚本计算缺页频率</h4>
+
+<pre><code>&gt; test.py
+</code></pre>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">string</span>
+
+<span class="k">def</span> <span class="nf">getData</span><span class="p">():</span>
+	<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+	<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">&quot;/proc/pfcount&quot;</span><span class="p">,</span> <span class="s">&quot;r&quot;</span><span class="p">)</span>
+	<span class="n">s</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+	<span class="n">params</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+	<span class="n">jiffies</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">pfcount</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+	<span class="n">jiffies</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">jiffies</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+	<span class="n">pfcount</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pfcount</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+
+	<span class="k">return</span> <span class="n">jiffies</span><span class="p">,</span> <span class="n">pfcount</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+	<span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="n">orig_jiffies</span><span class="p">,</span> <span class="n">orig_pfcount</span> <span class="o">=</span> <span class="n">getData</span><span class="p">();</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">):</span>
+		<span class="n">jiffies</span><span class="p">,</span> <span class="n">pfcount</span> <span class="o">=</span> <span class="n">getData</span><span class="p">()</span>
+
+		<span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="n">pfcount</span> <span class="o">-</span> <span class="n">orig_pfcount</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">jiffies</span> <span class="o">-</span> <span class="n">orig_jiffies</span><span class="p">)</span>
+		<span class="n">result</span> <span class="o">*=</span> <span class="mi">100</span>
+		<span class="n">total</span> <span class="o">+=</span> <span class="n">result</span>
+		<span class="k">print</span> <span class="s">&quot;page_fault per second: &quot;</span> <span class="o">+</span> <span class="s">&quot;{:.4f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+	<span class="k">print</span> <span class="s">&quot;avg. val: {:.4f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">total</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="n">main</span><span class="p">()</span></code></pre></div>
+
+<p>运行结果</p>
+
+<pre><code>$ python test.py
+page_fault per second: 2.8000
+page_fault per second: 3.4000
+page_fault per second: 3.3289
+page_fault per second: 3.0969
+page_fault per second: 3.1150
+page_fault per second: 2.9294
+page_fault per second: 3.8242
+page_fault per second: 3.5465
+page_fault per second: 3.5064
+page_fault per second: 3.3160
+avg. val: 3.2863
+</code></pre>
+
+<p><img src="/images/4.3/9.png" alt="" /></p>
+
+<p>观察到每秒平均发生3.3次缺页中断。</p>
+
+<h4 id="section-10">卸载内核模块</h4>
+<pre><code>$ sudo rmmod pf.ko
+</code></pre>
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">又一个临时的博客</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li>又一个临时的博客</li>
+          <li><a href="mailto:edward.zhu93@gmail.com">edward.zhu93@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/edward-zhu">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">edward-zhu</span>
+            </a>
+          </li>
+          
+
+          
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-3">
+        <p class="text">copyright 2015 Edward Zhu <br> 所有文章采用知识共享署名-非商业性使用 4.0 国际许可协议进行许可。
+</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

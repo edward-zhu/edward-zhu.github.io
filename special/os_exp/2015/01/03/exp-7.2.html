@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>文件系统管理实验 - 编程实验1</title>
+  <meta name="description" content="1. 实验目的与内容在Linux下，编写Shell程序，计算磁盘上所有目录下平均文件个数、所有目录平均长度、所有文件名平均长度。通过此实验，了解Linux系统文件管理相关机制">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://edward-zhu.github.io/os_exp/2015/01/03/exp-7.2.html">
+  <link rel="alternate" type="application/rss+xml" title="又一个临时的博客" href="http://edward-zhu.github.io/feed.xml" />
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">又一个临时的博客</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">文件系统管理实验 - 编程实验1</h1>
+    <p class="post-meta">Jan 3, 2015</p>
+  </header>
+
+  <article class="post-content">
+    <h2 id="section">1. 实验目的与内容</h2>
+<p>在Linux下，编写Shell程序，计算磁盘上所有目录下平均文件个数、所有目录平均长度、所有文件名平均长度。
+通过此实验，了解Linux系统文件管理相关机制</p>
+
+<h2 id="section-1">2. 程序源码</h2>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;dirent.h&gt;
+#include &lt;string.h&gt;
+
+int func(char * path, int * AllFileNumber, int * AllDepthNumber, 
+	int * AllFilenameNumber, int * AllFolderNumber)
+{
+	struct stat statbuf;
+	struct dirent * dirp;
+	DIR * dp;
+	char str1[1000];
+	char * str2;
+	int has_gen_path = 0, ret;
+	size_t len;
+
+	stat(path, &amp;statbuf); // 获取该目录下的文件系统信息
+
+	switch(statbuf.st_mode &amp; S_IFMT) {
+		case S_IFREG: { // 如果是普通文件
+			// 计算文件名长度
+			spos = strrchr(path, '/');
+			len = strlen(path) - (size_t)(spos - path);
+			*AllFilenameNumber += len;
+			*AllFilenameNumber += strlen(path); // 增加文件名长度
+			*AllFileNumber = * AllFileNumber + 1; // 增加文件数
+			*AllDepthNumber = *AllDepthNumber + 1; // 增加文件深度
+			break;
+		}
+
+		case S_IFDIR: {
+			*AllDepthNumber = *AllDepthNumber + 1; // 增加文件深度
+			*AllFolderNumber = *AllFolderNumber + 1; // 增加文件夹数
+			dp = opendir(path);	 // 打开文件夹
+			if (dp == NULL) {
+				return 0; // 若打开失败则返回0
+			}
+			while((dirp = readdir(dp)) != NULL) { // 遍历文件夹下的所有文件
+				if ((strcmp(dirp-&gt;d_name, ".") == 0) 
+					|| strcmp(dirp-&gt;d_name, "..") == 0)
+				{
+					continue; // 若文件夹是"."或者".."则跳过
+				}
+				// 如果还没有将当前路径存至str1
+				if (has_gen_path == 0) { 
+					strcpy(str1, path); // 将当前目录存至str1
+					// 获取当前路径字符串末尾指针
+					str2 = str1 + strlen(str1); 
+					has_gen_path = 1;
+				}
+				*str2++ = '/';
+				*str2 = '\0';
+				// 将当前文件名拷贝至当前路径末尾
+				strcpy(str2, dirp-&gt;d_name); 
+				// 递归扫描子目录
+				ret = func(str1, AllFileNumber, 
+					AllDepthNumber, AllFilenameNumber, AllFolderNumber);
+				*str2--;
+				*str2 = '\0';
+				
+			}
+			closedir(dp); // 关闭当前文件夹
+			break;
+		}
+	}
+	return 1;
+}
+
+int main(int argc, char * argv[])
+{
+	int ret;
+	int AllFileNumber = 0;
+	int AllDepthNumber = 0;
+	int AllFilenameNumber = 0;
+	int AllFolderNumber = 0;
+	printf("%s\n", argv[1]);
+	ret = func(argv[1], &amp;AllFileNumber, 
+		&amp;AllDepthNumber, &amp;AllFilenameNumber, &amp;AllFolderNumber);
+	printf("The average file # is %d\n", 
+		AllFileNumber / AllFolderNumber);
+	printf("The average file depth # is %d\n", 
+		AllDepthNumber / AllFolderNumber);
+	printf("The average filename number is %d\n", 
+		AllFilenameNumber / AllFileNumber);
+
+	return 0;
+}
+</code></pre>
+
+<h2 id="section-2">3. 实验结果</h2>
+<p>运行程序</p>
+
+<pre><code>$ ./fs-exp ~
+</code></pre>
+
+<p><img src="/images/7.2/1.png" alt="" /></p>
+
+<p>如图，程序正确扫描了该目录下所有文件和子目录，并计算出该目录下每个子文件夹中的平均文件数，平均文件深度，以及所有文件的平均文件名长度。</p>
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">又一个临时的博客</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li>又一个临时的博客</li>
+          <li><a href="mailto:edward.zhu93@gmail.com">edward.zhu93@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-2">
+        <ul class="social-media-list">
+          
+          <li>
+            <a href="https://github.com/edward-zhu">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">edward-zhu</span>
+            </a>
+          </li>
+          
+
+          
+        </ul>
+      </div>
+
+      <div class="footer-col  footer-col-3">
+        <p class="text">copyright 2015 Edward Zhu <br> 所有文章采用知识共享署名-非商业性使用 4.0 国际许可协议进行许可。
+</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
