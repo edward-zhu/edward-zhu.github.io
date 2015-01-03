@@ -76,11 +76,14 @@
 
 <h4 id="section-4">编写内核模块</h4>
 
-<p>文件中主要包含四个函数：
-* <code>clock_proc_show()</code>
-* <code>clock_proc_open()</code>
-* <code>init_clock()</code>
-* <code>cleanup_clock()</code></p>
+<p>文件中主要包含四个函数：</p>
+
+<ul>
+  <li><code>clock_proc_show()</code></li>
+  <li><code>clock_proc_open()</code></li>
+  <li><code>init_clock()</code></li>
+  <li><code>cleanup_clock()</code></li>
+</ul>
 
 <p>其中<code>init_clock()</code>,<code>cleanup_clock()</code>负责将模块从系统中加载或卸载,以及增加或删除模块在<code>/proc</code>中的入口。<code>clock_proc_open()</code>负责打开<code>/proc/clock</code>文件，并通过<code>clock_proc_show()</code>对文件进行读写操作。  </p>
 
