@@ -6,8 +6,8 @@
 </description>
     <link>http://edward-zhu.github.io/special/</link>
     <atom:link href="http://edward-zhu.github.io/special/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 03 Jan 2015 14:20:14 +0800</pubDate>
-    <lastBuildDate>Sat, 03 Jan 2015 14:20:14 +0800</lastBuildDate>
+    <pubDate>Sun, 11 Jan 2015 20:32:13 +0800</pubDate>
+    <lastBuildDate>Sun, 11 Jan 2015 20:32:13 +0800</lastBuildDate>
     <generator>Jekyll v2.5.3</generator>
     
       <item>
@@ -667,12 +667,16 @@ lrwx------ 1 edward edward 64 12月 30 19:36 2 -&amp;gt; /dev/pts/9
 &lt;p&gt;则我们可以根据这个过程来设计同步原语。&lt;/p&gt;
 
 &lt;h2 id=&quot;section-5&quot;&gt;4. 实验步骤及代码清单&lt;/h2&gt;
-&lt;p&gt;####实验环境
-- xubuntu 14.10 @ 2.5GHz Intel Core i5
-- Linux 3.16
-- Parallel Desktop 10&lt;/p&gt;
 
-&lt;h3 id=&quot;section-6&quot;&gt;1. 设计事件队列类型&lt;/h3&gt;
+&lt;h4 id=&quot;section-6&quot;&gt;实验环境&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;xubuntu 14.10 @ 2.5GHz Intel Core i5&lt;/li&gt;
+  &lt;li&gt;Linux 3.16&lt;/li&gt;
+  &lt;li&gt;Parallel Desktop 10&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;section-7&quot;&gt;1. 设计事件队列类型&lt;/h3&gt;
 &lt;pre&gt;&lt;code&gt;&amp;gt; /kernel/my_event.c
 
 typedef struct __myevent {
@@ -684,7 +688,7 @@ typedef struct __myevent {
 myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;h3 id=&quot;section-7&quot;&gt;2. 实现函数定义&lt;/h3&gt;
+&lt;h3 id=&quot;section-8&quot;&gt;2. 实现函数定义&lt;/h3&gt;
 
 &lt;h4 id=&quot;eventopen-&quot;&gt;&lt;code&gt;eventopen&lt;/code&gt; 系统调用&lt;/h4&gt;
 
@@ -874,7 +878,7 @@ myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 
 &lt;p&gt;&lt;img src=&quot;/images/5.3/code-1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;h3 id=&quot;section-8&quot;&gt;3. 修改系统调用表&lt;/h3&gt;
+&lt;h3 id=&quot;section-9&quot;&gt;3. 修改系统调用表&lt;/h3&gt;
 &lt;p&gt;在&lt;code&gt;/arch/x86/syscalls/syscall_64.tbl&lt;/code&gt;中加入如下内容&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;/arch/x86/syscalls/syscall_64.tbl&lt;/strong&gt;&lt;/p&gt;
@@ -921,7 +925,7 @@ myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 	    notifier.o ksysfs.o cred.o reboot.o &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
 	    async.o range.o groups.o smpboot.o my_event.o&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;h3 id=&quot;section-9&quot;&gt;5. 编译内核&lt;/h3&gt;
+&lt;h3 id=&quot;section-10&quot;&gt;5. 编译内核&lt;/h3&gt;
 
 &lt;pre&gt;&lt;code&gt;# make mrproper
 # make localconfig // 使用本地内核设置以减少编译时间
@@ -930,9 +934,9 @@ myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 # make install
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;h3 id=&quot;section-10&quot;&gt;6. 测试&lt;/h3&gt;
+&lt;h3 id=&quot;section-11&quot;&gt;6. 测试&lt;/h3&gt;
 
-&lt;h4 id=&quot;section-11&quot;&gt;测试程序代码&lt;/h4&gt;
+&lt;h4 id=&quot;section-12&quot;&gt;测试程序代码&lt;/h4&gt;
 
 &lt;p&gt;&lt;strong&gt;open.c&lt;/strong&gt;&lt;/p&gt;
 
@@ -1044,7 +1048,7 @@ myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 
 &lt;p&gt;以上5个程序分别调用了相应的系统调用，参数通过命令行参数传递。分别编译5个程序。&lt;/p&gt;
 
-&lt;h4 id=&quot;section-12&quot;&gt;测试&lt;/h4&gt;
+&lt;h4 id=&quot;section-13&quot;&gt;测试&lt;/h4&gt;
 &lt;p&gt;首先使用&lt;code&gt;open&lt;/code&gt;原语创建两个事件&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;$ ./open 0
@@ -1105,7 +1109,7 @@ $ dmesg
 &lt;p&gt;&lt;img src=&quot;/images/5.3/7.png&quot; alt=&quot;&quot; /&gt;
 &lt;img src=&quot;/images/5.3/8.png&quot; alt=&quot;&quot; /&gt;	&lt;/p&gt;
 
-&lt;h2 id=&quot;section-13&quot;&gt;参考资料&lt;/h2&gt;
+&lt;h2 id=&quot;section-14&quot;&gt;参考资料&lt;/h2&gt;
 &lt;ul&gt;
   &lt;li&gt;&lt;a href=&quot;http://jpkc.zju.edu.cn/k/505/pdf/nihe9.pdf&quot;&gt;内核实验9：设计一个同步机制&lt;/a&gt; - 浙江大学计算机学院&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;http://www.cs.swarthmore.edu/~newhall/cs45/s14/Labs/lab03.php&quot;&gt;CS45 Lab 3: Implementing a Synchronization Primative&lt;/a&gt; - Swarthmore College Computer Science Department&lt;/li&gt;
@@ -2000,19 +2004,12 @@ Continuing.
 # make install
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;h4 id=&quot;section-5&quot;&gt;5. 重建引导信息&lt;/h4&gt;
-
-&lt;pre&gt;&lt;code&gt;$ sudo grub2_update
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h4 id=&quot;section-6&quot;&gt;6. 重启系统&lt;/h4&gt;
+&lt;h4 id=&quot;section-5&quot;&gt;5. 重启系统&lt;/h4&gt;
 
 &lt;pre&gt;&lt;code&gt;$ sudo reboot
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;ol&gt;
-  &lt;li&gt;编写程序测试&lt;/li&gt;
-&lt;/ol&gt;
+&lt;h4 id=&quot;section-6&quot;&gt;6. 编写程序测试&lt;/h4&gt;
 
 &lt;blockquote&gt;
   &lt;p&gt;在&lt;strong&gt;2.6.18&lt;/strong&gt;版本之后的Linux内核中，&lt;code&gt;_syscall()&lt;/code&gt;宏被删除，应使用&lt;code&gt;syscall()&lt;/code&gt;函数。&lt;/p&gt;
@@ -2213,11 +2210,12 @@ Continuing.
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;h3 id=&quot;section-8&quot;&gt;5. 实验结果及分析&lt;/h3&gt;
-&lt;p&gt;####编译内核模块&lt;/p&gt;
+
+&lt;h4 id=&quot;section-9&quot;&gt;编译内核模块&lt;/h4&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/2.3/1.png&quot; alt=&quot;&quot; title=&quot;编译内核模块&quot; /&gt;&lt;/p&gt;
 
-&lt;h4 id=&quot;section-9&quot;&gt;加载内核模块&lt;/h4&gt;
+&lt;h4 id=&quot;section-10&quot;&gt;加载内核模块&lt;/h4&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/2.3/2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
@@ -2237,7 +2235,7 @@ Continuing.
 
 &lt;p&gt;可以看到测试程序正确获取到了内核模块提供的时间信息。&lt;/p&gt;
 
-&lt;h4 id=&quot;section-10&quot;&gt;卸载内核模块&lt;/h4&gt;
+&lt;h4 id=&quot;section-11&quot;&gt;卸载内核模块&lt;/h4&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/2.3/6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 

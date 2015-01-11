@@ -233,12 +233,16 @@
 <p>则我们可以根据这个过程来设计同步原语。</p>
 
 <h2 id="section-5">4. 实验步骤及代码清单</h2>
-<p>####实验环境
-- xubuntu 14.10 @ 2.5GHz Intel Core i5
-- Linux 3.16
-- Parallel Desktop 10</p>
 
-<h3 id="section-6">1. 设计事件队列类型</h3>
+<h4 id="section-6">实验环境</h4>
+
+<ul>
+  <li>xubuntu 14.10 @ 2.5GHz Intel Core i5</li>
+  <li>Linux 3.16</li>
+  <li>Parallel Desktop 10</li>
+</ul>
+
+<h3 id="section-7">1. 设计事件队列类型</h3>
 <pre><code>&gt; /kernel/my_event.c
 
 typedef struct __myevent {
@@ -250,7 +254,7 @@ typedef struct __myevent {
 myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 </code></pre>
 
-<h3 id="section-7">2. 实现函数定义</h3>
+<h3 id="section-8">2. 实现函数定义</h3>
 
 <h4 id="eventopen-"><code>eventopen</code> 系统调用</h4>
 
@@ -440,7 +444,7 @@ myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 
 <p><img src="/images/5.3/code-1.png" alt="" /></p>
 
-<h3 id="section-8">3. 修改系统调用表</h3>
+<h3 id="section-9">3. 修改系统调用表</h3>
 <p>在<code>/arch/x86/syscalls/syscall_64.tbl</code>中加入如下内容</p>
 
 <p><strong>/arch/x86/syscalls/syscall_64.tbl</strong></p>
@@ -487,7 +491,7 @@ myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 	    notifier.o ksysfs.o cred.o reboot.o <span class="se">\</span>
 	    async.o range.o groups.o smpboot.o my_event.o</code></pre></div>
 
-<h3 id="section-9">5. 编译内核</h3>
+<h3 id="section-10">5. 编译内核</h3>
 
 <pre><code># make mrproper
 # make localconfig // 使用本地内核设置以减少编译时间
@@ -496,9 +500,9 @@ myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 # make install
 </code></pre>
 
-<h3 id="section-10">6. 测试</h3>
+<h3 id="section-11">6. 测试</h3>
 
-<h4 id="section-11">测试程序代码</h4>
+<h4 id="section-12">测试程序代码</h4>
 
 <p><strong>open.c</strong></p>
 
@@ -610,7 +614,7 @@ myevent_t * lpmyevent_head = NULL, * lpmyevent_end = NULL;
 
 <p>以上5个程序分别调用了相应的系统调用，参数通过命令行参数传递。分别编译5个程序。</p>
 
-<h4 id="section-12">测试</h4>
+<h4 id="section-13">测试</h4>
 <p>首先使用<code>open</code>原语创建两个事件</p>
 
 <pre><code>$ ./open 0
@@ -671,7 +675,7 @@ $ dmesg
 <p><img src="/images/5.3/7.png" alt="" />
 <img src="/images/5.3/8.png" alt="" />	</p>
 
-<h2 id="section-13">参考资料</h2>
+<h2 id="section-14">参考资料</h2>
 <ul>
   <li><a href="http://jpkc.zju.edu.cn/k/505/pdf/nihe9.pdf">内核实验9：设计一个同步机制</a> - 浙江大学计算机学院</li>
   <li><a href="http://www.cs.swarthmore.edu/~newhall/cs45/s14/Labs/lab03.php">CS45 Lab 3: Implementing a Synchronization Primative</a> - Swarthmore College Computer Science Department</li>
